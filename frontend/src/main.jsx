@@ -45,7 +45,8 @@ function InvitationsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [modalMode, setModalMode] = useState(null);
-  const [message, setMessage] = useState(null);
+  const [pendingCancelInvitationId, setPendingCancelInvitationId] = useState(null);
+  const [errorMessage, setErrorMessage] = useState(null);
 
   const selectedInvitation = useMemo(
     () => invitations.find((invitation) => invitation.id === selectedInvitationId) || null,
@@ -73,14 +74,14 @@ function InvitationsPage() {
     } catch (error) {
       setInvitations([]);
       setSelectedInvitationId(null);
-      setMessage({ type: 'error', text: error.message });
+      setErrorMessage(error.message);
     } finally {
       setLoading(false);
     }
   }
 
   function openCreateModal() {
-    setMessage(null);
+    setErrorMessage(null);
     setModalMode('create');
   }
 
@@ -90,7 +91,7 @@ function InvitationsPage() {
     }
 
     setSelectedInvitationId(invitation.id);
-    setMessage(null);
+    setErrorMessage(null);
     setModalMode('details');
   }
 
@@ -103,9 +104,8 @@ function InvitationsPage() {
       });
       setModalMode(null);
       await loadInvitations(createdInvitation?.id || null);
-      setMessage({ type: 'success', text: 'Invitation created.' });
     } catch (error) {
-      setMessage({ type: 'error', text: error.message });
+      setErrorMessage(error.message);
     } finally {
       setSaving(false);
     }
@@ -120,9 +120,8 @@ function InvitationsPage() {
       });
       setModalMode(null);
       await loadInvitations(id);
-      setMessage({ type: 'success', text: 'Invitation updated.' });
     } catch (error) {
-      setMessage({ type: 'error', text: error.message });
+      setErrorMessage(error.message);
     } finally {
       setSaving(false);
     }
@@ -140,27 +139,27 @@ function InvitationsPage() {
       await apiRequest(`${API_BASE}/${id}/send`, { method: 'POST' });
       setModalMode(null);
       await loadInvitations(id);
-      setMessage({ type: 'success', text: 'Invitation marked as sent.' });
     } catch (error) {
-      setMessage({ type: 'error', text: error.message });
+      setErrorMessage(error.message);
     } finally {
       setSaving(false);
     }
   }
 
-  async function cancelInvitation(id) {
-    if (!window.confirm('Cancel this invitation?')) {
+  async function confirmCancelInvitation() {
+    if (!pendingCancelInvitationId) {
       return;
     }
 
+    const id = pendingCancelInvitationId;
     setSaving(true);
     try {
       await apiRequest(`${API_BASE}/${id}/cancel`, { method: 'POST' });
+      setPendingCancelInvitationId(null);
       setModalMode(null);
       await loadInvitations(id);
-      setMessage({ type: 'success', text: 'Invitation cancelled.' });
     } catch (error) {
-      setMessage({ type: 'error', text: error.message });
+      setErrorMessage(error.message);
     } finally {
       setSaving(false);
     }
@@ -190,7 +189,7 @@ function InvitationsPage() {
         }
       />
 
-      {message && <Message type={message.type}>{message.text}</Message>}
+      {errorMessage && <Message type="error">{errorMessage}</Message>}
 
       <Card>
         <div className="card-header">
@@ -222,7 +221,18 @@ function InvitationsPage() {
           onCreate={createInvitation}
           onUpdate={updateInvitation}
           onSend={sendInvitation}
-          onCancel={cancelInvitation}
+          onCancel={setPendingCancelInvitationId}
+        />
+      )}
+
+      {pendingCancelInvitationId && (
+        <ConfirmationModal
+          title="Cancel Invitation"
+          message="Are you sure you want to cancel this invitation?"
+          confirmLabel="Yes, Cancel Invitation"
+          confirming={saving}
+          onClose={() => setPendingCancelInvitationId(null)}
+          onConfirm={confirmCancelInvitation}
         />
       )}
     </>
@@ -255,6 +265,27 @@ function Button({ children, variant = 'secondary', className = '', ...props }) {
 
 function Message({ type, children }) {
   return <div className={`message ${type}`} role="status">{children}</div>;
+}
+
+function ConfirmationModal({ title, message, confirmLabel, confirming, onClose, onConfirm }) {
+  return (
+    <div className="modal-backdrop confirmation-backdrop" role="dialog" aria-modal="true" aria-labelledby="confirmationTitle">
+      <div className="modal-panel confirmation-panel">
+        <div className="modal-header">
+          <h2 id="confirmationTitle">{title}</h2>
+        </div>
+        <div className="confirmation-body">
+          <p>{message}</p>
+          <div className="form-actions">
+            <Button variant="secondary" onClick={onClose} disabled={confirming}>Cancel</Button>
+            <Button variant="danger" onClick={onConfirm} disabled={confirming}>
+              {confirming ? 'Cancelling...' : confirmLabel}
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function InvitationsTable({ invitations, loading, selectedInvitationId, onSelect, onOpen }) {

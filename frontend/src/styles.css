@@ -10,7 +10,6 @@
   --primary-hover: #1c528d;
   --danger: #b42318;
   --danger-bg: #fff4f2;
-  --success: #16794f;
   --shadow: 0 12px 32px rgba(23, 32, 51, 0.1);
 }
 
@@ -255,7 +254,7 @@ select {
   cursor: pointer;
 }
 
-.data-table tbody tr:not(.empty-row):hover {
+.data-table tbody tr:not(.empty-row):hover td {
   background: #f3f8fc;
 }
 
@@ -264,12 +263,22 @@ select {
   outline-offset: -3px;
 }
 
-.data-table tbody tr.selected-row {
-  background: #e8f3ff;
+.data-table tbody tr.selected-row td {
+  background: #ddebf8;
+  font-weight: 600;
 }
 
 .data-table tbody tr.selected-row td:first-child {
-  box-shadow: inset 3px 0 0 var(--primary);
+  border-left: 3px solid var(--primary);
+  padding-left: 11px;
+}
+
+.data-table tbody tr.selected-row:hover td {
+  background: #d2e4f5;
+}
+
+.data-table tbody tr.selected-row:hover td:first-child {
+  border-left-color: var(--primary);
 }
 
 .empty-cell {
@@ -351,12 +360,6 @@ select {
   background: var(--surface);
 }
 
-.message.success {
-  color: var(--success);
-  background: #edf8f3;
-  border-color: #c4e8d8;
-}
-
 .message.error {
   color: var(--danger);
   background: var(--danger-bg);
@@ -370,6 +373,7 @@ select {
   place-items: center;
   padding: 20px;
   background: rgba(15, 23, 42, 0.42);
+  z-index: 20;
 }
 
 .modal-panel {
@@ -377,6 +381,25 @@ select {
   background: var(--surface);
   border-radius: 8px;
   box-shadow: var(--shadow);
+}
+
+.confirmation-backdrop {
+  z-index: 30;
+}
+
+.confirmation-panel {
+  width: min(420px, 100%);
+}
+
+.confirmation-body {
+  display: grid;
+  gap: 20px;
+  padding: 20px;
+}
+
+.confirmation-body p {
+  margin: 0;
+  color: var(--text);
 }
 
 .modal-header {

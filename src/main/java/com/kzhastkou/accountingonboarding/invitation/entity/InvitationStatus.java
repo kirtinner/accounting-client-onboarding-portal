@@ -1,8 +1,11 @@
 package com.kzhastkou.accountingonboarding.invitation.entity;
 
 public enum InvitationStatus {
-    CREATED,
-    COMPLETED,
+    DRAFT,
+    SENT,
+    SUBMITTED,
+    APPROVED,
+    XPM_SENT,
     EXPIRED,
     CANCELLED
 }

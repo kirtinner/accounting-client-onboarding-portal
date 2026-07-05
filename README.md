@@ -1,62 +1,53 @@
 # Accounting Client Onboarding Portal
 
-Accounting Client Onboarding Portal is a Spring Boot application being developed to automate the onboarding of new clients for accounting firms.
+Accounting Client Onboarding Portal is a Spring Boot and React application being developed to automate onboarding for new accounting clients.
 
-The long-term goal is to collect client information, supporting documents, and onboarding approvals before automatically creating clients in Xero Practice Manager (XPM).
+The long-term goal is to collect client information, supporting documents, and onboarding approvals before synchronising approved clients with Xero Practice Manager.
 
-The current MVP demonstrates a complete integration with the Xero Accounting API, including OAuth 2.0 authentication, multi-tenant support, and live read/write operations against connected Xero organisations.
-
-## Project Purpose
-
-This project serves as a production-quality prototype demonstrating secure integration with the Xero platform in preparation for future Xero Practice Manager (XPM) integration.
-
-## Project Goals
-
-The application is intended to streamline the onboarding process by:
-
-- Creating secure onboarding invitations
-- Collecting client information through an online questionnaire
-- Uploading supporting documents
-- Reviewing onboarding submissions
-- Approving new clients
-- Automatically synchronising approved clients with Xero Practice Manager
-
-## Current Development Status
+## Current MVP
 
 The current MVP includes:
 
 - Spring Boot backend application
 - PostgreSQL integration
 - Flyway database migrations
-- Invitation and questionnaire backend foundation
+- Invitation Management backend API
+- React + Vite Client Invitations page
 - Global REST exception handling
 - Xero OAuth 2.0 integration
 - Multiple Xero organisation awareness
-- Multi-tenant diagnostics
-- Live Xero Accounting API integration
-- Organisation information endpoint
-- Contact retrieval
-- Contact creation
+- Xero Accounting API contact and organisation endpoints
 
-## Xero Accounting API Integration
+## Frontend
 
-The application authenticates with Xero using OAuth 2.0 and performs live Accounting API requests.
+The frontend is a React + Vite application in `frontend/`.
 
-### Implemented
+The first MVP screen is the Client Invitations page:
 
-- OAuth 2.0 Authorization Code Flow
-- OAuth state validation
-- Access token retrieval
-- Refresh token retrieval
-- Connected organisation discovery
-- Multiple tenant awareness
-- Connected organisation diagnostics
-- Organisation endpoint
-- Contact retrieval (GET)
-- Contact creation (POST)
-- Tenant-aware API responses
+```text
+http://localhost:5173/
+```
 
-### Available Endpoints
+It supports:
+
+- Listing onboarding invitations
+- Creating draft invitations
+- Sending draft invitations
+- Cancelling draft or sent invitations
+
+## Backend API
+
+Invitation Management endpoints:
+
+```text
+POST /api/invitations
+GET  /api/invitations
+GET  /api/invitations/{id}
+POST /api/invitations/{id}/send
+POST /api/invitations/{id}/cancel
+```
+
+Xero diagnostic endpoints:
 
 ```text
 GET  /api/xero/connect
@@ -79,16 +70,18 @@ OAuth tokens are currently stored in memory for the MVP prototype. Persistent to
 - PostgreSQL
 - Flyway
 - Maven
-- JUnit
+- React
+- Vite
 - Xero OAuth 2.0
 - Xero Accounting API
 
 ## Running Locally
 
-### Prerequisites
+Prerequisites:
 
 - Java 21
 - PostgreSQL
+- Node.js and npm
 - Maven Wrapper included in the repository
 
 Create a PostgreSQL database:
@@ -109,50 +102,44 @@ XERO_REDIRECT_URI
 
 `POSTGRES_USER` and `POSTGRES_PASSWORD` default to `postgres` for local development.
 
-Start the application.
-
-Linux/macOS:
+Start the backend:
 
 ```bash
 ./mvnw spring-boot:run
 ```
 
-Windows:
+On Windows:
 
 ```bash
 mvnw.cmd spring-boot:run
 ```
 
-Connect a Xero organisation:
+Start the frontend:
 
-```text
-http://localhost:8080/api/xero/connect
+```bash
+cd frontend
+npm install
+npm run dev
 ```
 
-Verify the integration:
-
-```text
-http://localhost:8080/api/xero/status
-http://localhost:8080/api/xero/connections
-http://localhost:8080/api/xero/organisation
-http://localhost:8080/api/xero/contacts
-```
+The Vite dev server runs on port `5173` and proxies `/api` requests to `http://localhost:8080`.
 
 ## Project Structure
 
 ```text
 src
-├── config
-├── common
-├── invitation
-└── xero
+|-- main/java/com/kzhastkou/accountingonboarding
+|   |-- common
+|   |-- config
+|   |-- invitation
+|   `-- xero
+`-- main/resources
+
+frontend
+`-- src
 ```
 
-Project documentation is located under:
-
-```text
-docs/
-```
+Project documentation is located under `docs/`.
 
 ## Documentation
 
@@ -165,16 +152,15 @@ docs/
 
 Planned improvements include:
 
-- Xero Practice Manager integration
+- Public onboarding form
 - Secure document upload
 - Authentication and authorisation
-- Administration UI
 - Persistent OAuth token storage
+- Xero Practice Manager integration
 - Docker deployment
 - Cloud deployment
 - Expanded automated testing
 
 ## License
 
-Copyright © 2026 Kiryl Zhastkou.
-All rights reserved.
+This project is licensed under the MIT License.

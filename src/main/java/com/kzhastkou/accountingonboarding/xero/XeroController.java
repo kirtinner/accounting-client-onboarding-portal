@@ -29,8 +29,8 @@ public class XeroController {
     }
 
     @GetMapping("/callback")
-    public XeroCallbackResponse callback(@RequestParam String code) {
-        return xeroIntegrationService.connectWithAuthorizationCode(code);
+    public XeroCallbackResponse callback(@RequestParam String code, @RequestParam String state) {
+        return xeroIntegrationService.connectWithAuthorizationCode(code, state);
     }
 
     @GetMapping("/contacts")

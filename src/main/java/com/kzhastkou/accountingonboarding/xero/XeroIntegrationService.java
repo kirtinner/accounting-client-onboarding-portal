@@ -12,6 +12,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @Service
 public class XeroIntegrationService {
@@ -35,19 +36,25 @@ public class XeroIntegrationService {
 
     public String buildAuthorizationUrl() {
         requireConfigured();
+        String state = UUID.randomUUID().toString();
+        connectionState.setExpectedOAuthState(state);
 
         return UriComponentsBuilder.fromUriString(AUTHORIZE_URL)
                 .queryParam("response_type", "code")
                 .queryParam("client_id", properties.clientId())
                 .queryParam("redirect_uri", properties.redirectUri())
                 .queryParam("scope", SCOPES)
+                .queryParam("state", state)
                 .build()
                 .encode()
                 .toUriString();
     }
 
-    public XeroCallbackResponse connectWithAuthorizationCode(String code) {
+    public XeroCallbackResponse connectWithAuthorizationCode(String code, String state) {
         requireConfigured();
+        if (!connectionState.consumeExpectedOAuthState(state)) {
+            throw new BadRequestException("Invalid Xero OAuth state");
+        }
 
         Map<?, ?> tokenResponse = exchangeCodeForTokens(code);
         String accessToken = requireString(tokenResponse, "access_token");
@@ -161,14 +168,18 @@ public class XeroIntegrationService {
         body.add("code", code);
         body.add("redirect_uri", properties.redirectUri());
 
-        return restClient.post()
-                .uri(TOKEN_URL)
-                .headers(headers -> headers.setBasicAuth(properties.clientId(), properties.clientSecret()))
-                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                .accept(MediaType.APPLICATION_JSON)
-                .body(body)
-                .retrieve()
-                .body(Map.class);
+        try {
+            return restClient.post()
+                    .uri(TOKEN_URL)
+                    .headers(headers -> headers.setBasicAuth(properties.clientId(), properties.clientSecret()))
+                    .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                    .accept(MediaType.APPLICATION_JSON)
+                    .body(body)
+                    .retrieve()
+                    .body(Map.class);
+        } catch (RestClientResponseException exception) {
+            throw toXeroApiException(exception);
+        }
     }
 
     private List<XeroConnectionResponse> fetchConnections(String accessToken) {

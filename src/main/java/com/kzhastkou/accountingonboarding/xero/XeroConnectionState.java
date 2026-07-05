@@ -11,6 +11,7 @@ public class XeroConnectionState {
     private String accessToken;
     private String refreshToken;
     private String selectedTenantId;
+    private String expectedOAuthState;
     private List<XeroConnectionResponse> connections = List.of();
 
     public boolean isConnected() {
@@ -47,7 +48,17 @@ public class XeroConnectionState {
                 .findFirst();
     }
 
-    public void update(String accessToken, String refreshToken, List<XeroConnectionResponse> connections) {
+    public synchronized void setExpectedOAuthState(String expectedOAuthState) {
+        this.expectedOAuthState = expectedOAuthState;
+    }
+
+    public synchronized boolean consumeExpectedOAuthState(String state) {
+        boolean valid = expectedOAuthState != null && expectedOAuthState.equals(state);
+        expectedOAuthState = null;
+        return valid;
+    }
+
+    public synchronized void update(String accessToken, String refreshToken, List<XeroConnectionResponse> connections) {
         this.accessToken = accessToken;
         this.refreshToken = refreshToken;
         this.connections = List.copyOf(connections);

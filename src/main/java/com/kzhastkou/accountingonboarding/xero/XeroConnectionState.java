@@ -2,15 +2,19 @@ package com.kzhastkou.accountingonboarding.xero;
 
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+import java.util.Optional;
+
 @Component
 public class XeroConnectionState {
 
     private String accessToken;
     private String refreshToken;
-    private String tenantId;
+    private String selectedTenantId;
+    private List<XeroConnectionResponse> connections = List.of();
 
     public boolean isConnected() {
-        return accessToken != null && tenantId != null;
+        return accessToken != null && selectedTenantId != null;
     }
 
     public String getAccessToken() {
@@ -21,13 +25,32 @@ public class XeroConnectionState {
         return refreshToken;
     }
 
-    public String getTenantId() {
-        return tenantId;
+    public String getSelectedTenantId() {
+        return selectedTenantId;
     }
 
-    public void update(String accessToken, String refreshToken, String tenantId) {
+    public String getSelectedTenantName() {
+        return connections.stream()
+                .filter(connection -> connection.tenantId().equals(selectedTenantId))
+                .map(XeroConnectionResponse::tenantName)
+                .findFirst()
+                .orElse(null);
+    }
+
+    public List<XeroConnectionResponse> getConnections() {
+        return connections;
+    }
+
+    public Optional<XeroConnectionResponse> getSelectedConnection() {
+        return connections.stream()
+                .filter(connection -> connection.tenantId().equals(selectedTenantId))
+                .findFirst();
+    }
+
+    public void update(String accessToken, String refreshToken, List<XeroConnectionResponse> connections) {
         this.accessToken = accessToken;
         this.refreshToken = refreshToken;
-        this.tenantId = tenantId;
+        this.connections = List.copyOf(connections);
+        this.selectedTenantId = connections.isEmpty() ? null : connections.getFirst().tenantId();
     }
 }

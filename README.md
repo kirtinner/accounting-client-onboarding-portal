@@ -38,6 +38,15 @@ The repository currently contains the initial Spring Boot project structure and 
 
 Application features, domain models, API endpoints, frontend code, and database migration strategy have not been implemented yet.
 
+## Xero Integration Status
+
+The application successfully connects to Xero using OAuth 2.0 and performs live Accounting API calls against a connected Xero organisation.
+
+Implemented:
+- OAuth 2.0 authorization flow
+- Tenant connection retrieval
+- Accounting API Contacts endpoint integration
+- 
 ## Local Development Requirements
 
 - Java 21

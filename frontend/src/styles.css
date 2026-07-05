@@ -134,6 +134,13 @@ select {
   color: var(--text-muted);
 }
 
+.page-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
 .card {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -146,6 +153,7 @@ select {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 16px;
   padding: 14px 16px;
   border-bottom: 1px solid var(--border);
 }
@@ -153,6 +161,19 @@ select {
 .card-header h2 {
   margin: 0;
   font-size: 16px;
+}
+
+.card-header p {
+  margin: 3px 0 0;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.selected-summary {
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 700;
+  text-align: right;
 }
 
 .button {
@@ -230,6 +251,27 @@ select {
   border-bottom: 0;
 }
 
+.data-table tbody tr:not(.empty-row) {
+  cursor: pointer;
+}
+
+.data-table tbody tr:not(.empty-row):hover {
+  background: #f3f8fc;
+}
+
+.data-table tbody tr:focus {
+  outline: 3px solid #cfe2f7;
+  outline-offset: -3px;
+}
+
+.data-table tbody tr.selected-row {
+  background: #e8f3ff;
+}
+
+.data-table tbody tr.selected-row td:first-child {
+  box-shadow: inset 3px 0 0 var(--primary);
+}
+
 .empty-cell {
   height: 88px;
   color: var(--text-muted);
@@ -251,8 +293,8 @@ select {
   display: inline-flex;
   align-items: center;
   min-height: 24px;
-  border-radius: 999px;
-  padding: 3px 9px;
+  border-radius: 6px;
+  padding: 3px 8px;
   font-size: 12px;
   font-weight: 700;
   border: 1px solid transparent;
@@ -351,6 +393,10 @@ select {
   font-size: 18px;
 }
 
+.modal-subtitle {
+  margin-top: 8px;
+}
+
 .icon-button {
   width: 32px;
   height: 32px;
@@ -385,14 +431,48 @@ select {
   background: #ffffff;
 }
 
+.field input[readonly],
+.field select:disabled {
+  color: var(--text);
+  background: var(--surface-muted);
+}
+
 .field input:focus,
 .field select:focus {
   outline: 3px solid #cfe2f7;
   border-color: var(--primary);
 }
 
+.details-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  padding-top: 2px;
+}
+
+.detail {
+  display: grid;
+  gap: 2px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface-muted);
+}
+
+.detail span {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.detail strong {
+  font-size: 13px;
+}
+
 .form-actions {
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
   gap: 10px;
 }
@@ -423,5 +503,23 @@ select {
 
   .page-header {
     flex-direction: column;
+  }
+
+  .page-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .card-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .selected-summary {
+    text-align: left;
+  }
+
+  .details-grid {
+    grid-template-columns: 1fr;
   }
 }

@@ -2,12 +2,14 @@ package com.kzhastkou.accountingonboarding.invitation.controller;
 
 import com.kzhastkou.accountingonboarding.invitation.dto.CreateOnboardingInvitationRequest;
 import com.kzhastkou.accountingonboarding.invitation.dto.OnboardingInvitationResponse;
+import com.kzhastkou.accountingonboarding.invitation.dto.UpdateOnboardingInvitationRequest;
 import com.kzhastkou.accountingonboarding.invitation.service.OnboardingInvitationService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -39,6 +41,12 @@ public class OnboardingInvitationController {
     @GetMapping("/{id}")
     public OnboardingInvitationResponse getInvitation(@PathVariable Long id) {
         return service.getInvitation(id);
+    }
+
+    @PutMapping("/{id}")
+    public OnboardingInvitationResponse updateInvitation(@PathVariable Long id,
+                                                        @Valid @RequestBody UpdateOnboardingInvitationRequest request) {
+        return service.updateInvitation(id, request);
     }
 
     @PostMapping("/{id}/send")

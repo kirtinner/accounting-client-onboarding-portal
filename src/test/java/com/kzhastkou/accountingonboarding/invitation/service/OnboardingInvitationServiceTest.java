@@ -3,6 +3,7 @@ package com.kzhastkou.accountingonboarding.invitation.service;
 import com.kzhastkou.accountingonboarding.common.exception.BadRequestException;
 import com.kzhastkou.accountingonboarding.invitation.dto.CreateOnboardingInvitationRequest;
 import com.kzhastkou.accountingonboarding.invitation.dto.OnboardingInvitationResponse;
+import com.kzhastkou.accountingonboarding.invitation.dto.UpdateOnboardingInvitationRequest;
 import com.kzhastkou.accountingonboarding.invitation.entity.ClientType;
 import com.kzhastkou.accountingonboarding.invitation.entity.InvitationStatus;
 import com.kzhastkou.accountingonboarding.invitation.entity.OnboardingInvitation;
@@ -85,6 +86,41 @@ class OnboardingInvitationServiceTest {
         service.cancelInvitation(1L);
 
         assertThrows(BadRequestException.class, () -> service.sendInvitation(1L));
+    }
+
+    @Test
+    void updateDraftInvitationChangesEditableDetailsOnly() {
+        OnboardingInvitation invitation = draftInvitation();
+        when(repository.findById(1L)).thenReturn(Optional.of(invitation));
+
+        OnboardingInvitationResponse original = service.getInvitation(1L);
+        OnboardingInvitationResponse response = service.updateInvitation(1L, new UpdateOnboardingInvitationRequest(
+                "Taylor Brown",
+                "taylor@example.com",
+                ClientType.COMPANY
+        ));
+
+        assertEquals("Taylor Brown", response.preferredName());
+        assertEquals("taylor@example.com", response.email());
+        assertEquals(ClientType.COMPANY, response.clientType());
+        assertEquals(original.token(), response.token());
+        assertEquals(original.status(), response.status());
+        assertEquals(original.createdAt(), response.createdAt());
+        assertEquals(original.expiresAt(), response.expiresAt());
+    }
+
+    @Test
+    void updateSentInvitationFails() {
+        OnboardingInvitation invitation = draftInvitation();
+        when(repository.findById(1L)).thenReturn(Optional.of(invitation));
+
+        service.sendInvitation(1L);
+
+        assertThrows(BadRequestException.class, () -> service.updateInvitation(1L, new UpdateOnboardingInvitationRequest(
+                "Taylor Brown",
+                "taylor@example.com",
+                ClientType.COMPANY
+        )));
     }
 
     private OnboardingInvitation draftInvitation() {

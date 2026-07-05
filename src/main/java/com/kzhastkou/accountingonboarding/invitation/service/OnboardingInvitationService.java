@@ -4,6 +4,7 @@ import com.kzhastkou.accountingonboarding.common.exception.BadRequestException;
 import com.kzhastkou.accountingonboarding.common.exception.NotFoundException;
 import com.kzhastkou.accountingonboarding.invitation.dto.CreateOnboardingInvitationRequest;
 import com.kzhastkou.accountingonboarding.invitation.dto.OnboardingInvitationResponse;
+import com.kzhastkou.accountingonboarding.invitation.dto.UpdateOnboardingInvitationRequest;
 import com.kzhastkou.accountingonboarding.invitation.entity.InvitationStatus;
 import com.kzhastkou.accountingonboarding.invitation.entity.OnboardingInvitation;
 import com.kzhastkou.accountingonboarding.invitation.repository.OnboardingInvitationRepository;
@@ -53,6 +54,17 @@ public class OnboardingInvitationService {
     @Transactional(readOnly = true)
     public OnboardingInvitationResponse getInvitation(Long id) {
         return toResponse(findInvitation(id));
+    }
+
+    @Transactional
+    public OnboardingInvitationResponse updateInvitation(Long id, UpdateOnboardingInvitationRequest request) {
+        OnboardingInvitation invitation = findInvitation(id);
+        if (invitation.getStatus() != InvitationStatus.DRAFT) {
+            throw new BadRequestException("Invitation can only be updated from DRAFT status");
+        }
+
+        invitation.updateDetails(request.preferredName(), request.email(), request.clientType());
+        return toResponse(invitation);
     }
 
     @Transactional

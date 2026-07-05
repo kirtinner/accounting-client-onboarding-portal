@@ -132,6 +132,12 @@ public class OnboardingInvitation {
         return createdBy;
     }
 
+    public void updateDetails(String preferredName, String email, ClientType clientType) {
+        this.preferredName = preferredName;
+        this.email = email;
+        this.clientType = clientType;
+    }
+
     public void markSent(Instant sentAt) {
         this.status = InvitationStatus.SENT;
         this.sentAt = sentAt;

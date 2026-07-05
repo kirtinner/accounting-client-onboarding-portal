@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
+import unfairAdvantageLogo from './assets/unfair-advantage-logo.webp';
 import './styles.css';
 
 const API_BASE = '/api/invitations';
@@ -17,7 +18,7 @@ function AppLayout({ children }) {
     <div className="app-shell">
       <header className="app-header">
         <div className="brand">
-          <div className="brand-mark">A</div>
+          <img className="brand-logo" src={unfairAdvantageLogo} alt="" aria-hidden="true" />
           <div>
             <div className="brand-name">Accounting Client Onboarding Portal</div>
             <div className="brand-context">Internal onboarding workspace</div>
@@ -175,15 +176,16 @@ function InvitationsPage() {
             <Button variant="secondary" onClick={() => loadInvitations()} disabled={loading || saving}>
               Refresh
             </Button>
-            <Button variant="primary" onClick={openCreateModal} disabled={saving}>
-              New Invitation
-            </Button>
             <Button
               variant="secondary"
+              className="selected-action-button"
               onClick={() => openSelectedInvitation()}
               disabled={!selectedInvitation || loading || saving}
             >
               {selectedButtonText}
+            </Button>
+            <Button variant="primary" className="new-invitation-button" onClick={openCreateModal} disabled={saving}>
+              New Invitation
             </Button>
           </div>
         }
@@ -192,17 +194,6 @@ function InvitationsPage() {
       {errorMessage && <Message type="error">{errorMessage}</Message>}
 
       <Card>
-        <div className="card-header">
-          <div>
-            <h2>Invitations</h2>
-            <p>Select a row to inspect it. Double-click to open details.</p>
-          </div>
-          {selectedInvitation && (
-            <span className="selected-summary">
-              Selected: {selectedInvitation.preferredName || selectedInvitation.email}
-            </span>
-          )}
-        </div>
         <InvitationsTable
           invitations={invitations}
           loading={loading}

@@ -2,6 +2,7 @@ package com.kzhastkou.accountingonboarding.invitation.service;
 
 import com.kzhastkou.accountingonboarding.common.exception.BadRequestException;
 import com.kzhastkou.accountingonboarding.common.exception.NotFoundException;
+import com.kzhastkou.accountingonboarding.email.InvitationEmailService;
 import com.kzhastkou.accountingonboarding.invitation.dto.CreateOnboardingInvitationRequest;
 import com.kzhastkou.accountingonboarding.invitation.dto.OnboardingInvitationResponse;
 import com.kzhastkou.accountingonboarding.invitation.dto.UpdateOnboardingInvitationRequest;
@@ -22,9 +23,12 @@ public class OnboardingInvitationService {
     private static final Duration INVITATION_VALIDITY = Duration.ofDays(10);
 
     private final OnboardingInvitationRepository repository;
+    private final InvitationEmailService invitationEmailService;
 
-    public OnboardingInvitationService(OnboardingInvitationRepository repository) {
+    public OnboardingInvitationService(OnboardingInvitationRepository repository,
+                                       InvitationEmailService invitationEmailService) {
         this.repository = repository;
+        this.invitationEmailService = invitationEmailService;
     }
 
     @Transactional
@@ -75,6 +79,7 @@ public class OnboardingInvitationService {
         }
 
         invitation.markSent(Instant.now());
+        invitationEmailService.sendInvitation(invitation);
         return toResponse(invitation);
     }
 

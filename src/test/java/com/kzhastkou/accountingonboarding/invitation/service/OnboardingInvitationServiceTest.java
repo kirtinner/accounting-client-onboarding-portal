@@ -1,6 +1,7 @@
 package com.kzhastkou.accountingonboarding.invitation.service;
 
 import com.kzhastkou.accountingonboarding.common.exception.BadRequestException;
+import com.kzhastkou.accountingonboarding.email.InvitationEmailService;
 import com.kzhastkou.accountingonboarding.invitation.dto.CreateOnboardingInvitationRequest;
 import com.kzhastkou.accountingonboarding.invitation.dto.OnboardingInvitationResponse;
 import com.kzhastkou.accountingonboarding.invitation.dto.UpdateOnboardingInvitationRequest;
@@ -20,17 +21,20 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class OnboardingInvitationServiceTest {
 
     private OnboardingInvitationRepository repository;
+    private InvitationEmailService invitationEmailService;
     private OnboardingInvitationService service;
 
     @BeforeEach
     void setUp() {
         repository = mock(OnboardingInvitationRepository.class);
-        service = new OnboardingInvitationService(repository);
+        invitationEmailService = mock(InvitationEmailService.class);
+        service = new OnboardingInvitationService(repository, invitationEmailService);
 
         when(repository.existsByToken(any(UUID.class))).thenReturn(false);
         when(repository.save(any(OnboardingInvitation.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -64,6 +68,7 @@ class OnboardingInvitationServiceTest {
 
         assertEquals(InvitationStatus.SENT, response.status());
         assertNotNull(response.sentAt());
+        verify(invitationEmailService).sendInvitation(invitation);
     }
 
     @Test

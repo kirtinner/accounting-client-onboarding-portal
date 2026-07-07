@@ -147,4 +147,9 @@ public class OnboardingInvitation {
         this.status = InvitationStatus.CANCELLED;
         this.cancelledAt = cancelledAt;
     }
+
+    public void markSubmitted(Instant submittedAt) {
+        this.status = InvitationStatus.SUBMITTED;
+        this.submittedAt = submittedAt;
+    }
 }

@@ -142,18 +142,93 @@ XPM_SENT
 EXPIRED
 ```
 
-## Planned API Areas
-
 ### Public Questionnaire
 
 Public endpoints used by invited clients to submit onboarding information.
 
-Typical operations:
+All public questionnaire endpoints are token based. The token must belong to a `SENT` invitation that has not expired. `DRAFT`, `SUBMITTED`, `APPROVED`, `XPM_SENT`, `CANCELLED`, and expired invitations cannot be edited through the public API.
 
-- Retrieve questionnaire
-- Submit questionnaire
-- Update questionnaire
-- Validate submitted information
+#### Get Public Onboarding Context
+
+`GET /api/public/onboarding/{token}`
+
+Returns invitation context and the current questionnaire, if one has already been started.
+
+Response body:
+
+```json
+{
+  "invitationId": 1,
+  "token": "00000000-0000-0000-0000-000000000000",
+  "preferredName": "Alex Smith",
+  "email": "alex@example.com",
+  "clientType": "INDIVIDUAL",
+  "expiresAt": "2026-07-15T00:00:00Z",
+  "questionnaire": null
+}
+```
+
+Error responses:
+
+- `404 Not Found` if the token does not match an invitation.
+- `400 Bad Request` if the invitation is not publicly editable.
+
+#### Create or Update Questionnaire
+
+`PUT /api/public/onboarding/{token}/questionnaire`
+
+Creates or updates questionnaire data for a `SENT` invitation. This endpoint does not submit the questionnaire or change the invitation status.
+
+Request body:
+
+```json
+{
+  "firstName": "Alex",
+  "middleName": null,
+  "lastName": "Smith",
+  "dateOfBirth": "1990-01-15",
+  "email": "alex@example.com",
+  "mobilePhone": "0400000000",
+  "addressLine1": "1 Main Street",
+  "addressLine2": null,
+  "suburb": "Sydney",
+  "state": "NSW",
+  "postcode": "2000",
+  "country": "Australia",
+  "clientConfirmed": false
+}
+```
+
+Error responses:
+
+- `404 Not Found` if the token does not match an invitation.
+- `400 Bad Request` if the invitation is not publicly editable.
+- `400 Bad Request` for validation failures.
+
+#### Submit Questionnaire
+
+`POST /api/public/onboarding/{token}/submit`
+
+Submits the existing questionnaire. The questionnaire must exist and `clientConfirmed` must be `true`.
+
+Status transition:
+
+- `SENT` -> `SUBMITTED`
+
+Effects:
+
+- Sets `questionnaires.submitted_at`.
+- Sets `onboarding_invitations.submitted_at`.
+- Changes invitation status to `SUBMITTED`.
+
+Error responses:
+
+- `404 Not Found` if the token does not match an invitation.
+- `400 Bad Request` if the invitation is not publicly editable.
+- `400 Bad Request` if the questionnaire does not exist.
+- `400 Bad Request` if client confirmation is missing.
+
+## Planned API Areas
 
 ---
 

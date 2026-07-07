@@ -35,6 +35,8 @@ It supports:
 - Sending draft invitations
 - Cancelling draft or sent invitations
 
+Sending an invitation delivers a plain text onboarding email through Spring Mail.
+
 ## Backend API
 
 Invitation Management endpoints:
@@ -98,9 +100,30 @@ POSTGRES_PASSWORD
 XERO_CLIENT_ID
 XERO_CLIENT_SECRET
 XERO_REDIRECT_URI
+FRONTEND_BASE_URL
+SMTP_HOST
+SMTP_PORT
+SMTP_USERNAME
+SMTP_PASSWORD
+SMTP_AUTH
+SMTP_STARTTLS_ENABLE
 ```
 
 `POSTGRES_USER` and `POSTGRES_PASSWORD` default to `postgres` for local development.
+`FRONTEND_BASE_URL` defaults to `http://localhost:5173` and is used to build public onboarding links.
+
+SMTP settings are read by Spring Mail. Example local configuration:
+
+```bash
+set SMTP_HOST=smtp.example.com
+set SMTP_PORT=587
+set SMTP_USERNAME=mailer@example.com
+set SMTP_PASSWORD=your-password
+set SMTP_AUTH=true
+set SMTP_STARTTLS_ENABLE=true
+```
+
+Do not commit real SMTP credentials. If email delivery fails while sending an invitation, the send request fails and the invitation is not committed as sent.
 
 Start the backend:
 

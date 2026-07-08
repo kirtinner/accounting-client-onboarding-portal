@@ -1,6 +1,18 @@
+import { useEffect } from 'react';
 import Button from '../common/Button.jsx';
 
 export default function ConfirmationDialog({ title, message, confirmLabel, confirming, onClose, onConfirm }) {
+  useEffect(() => {
+    function handleKeyDown(event) {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
   return (
     <div className="modal-backdrop confirmation-backdrop" role="dialog" aria-modal="true" aria-labelledby="confirmationTitle">
       <div className="modal-panel confirmation-panel">

@@ -1,6 +1,7 @@
 package com.kzhastkou.accountingonboarding.questionnaire.entity;
 
 import com.kzhastkou.accountingonboarding.invitation.entity.OnboardingInvitation;
+import com.kzhastkou.accountingonboarding.questionnaire.dto.AdminQuestionnaireUpdateRequest;
 import com.kzhastkou.accountingonboarding.questionnaire.dto.QuestionnaireRequest;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -196,6 +197,22 @@ public class Questionnaire {
         this.postcode = request.postcode();
         this.country = request.country();
         this.clientConfirmed = request.clientConfirmed();
+        this.updatedAt = updatedAt;
+    }
+
+    public void updateFrom(AdminQuestionnaireUpdateRequest request, Instant updatedAt) {
+        this.firstName = request.firstName();
+        this.middleName = request.middleName();
+        this.lastName = request.lastName();
+        this.dateOfBirth = request.dateOfBirth();
+        this.email = request.email();
+        this.mobilePhone = request.mobilePhone();
+        this.addressLine1 = request.addressLine1();
+        this.addressLine2 = request.addressLine2();
+        this.suburb = request.suburb();
+        this.state = request.state();
+        this.postcode = request.postcode();
+        this.country = request.country();
         this.updatedAt = updatedAt;
     }
 

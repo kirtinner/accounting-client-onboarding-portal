@@ -1,5 +1,6 @@
 package com.kzhastkou.accountingonboarding.invitation.entity;
 
+import com.kzhastkou.accountingonboarding.common.exception.BadRequestException;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -151,5 +152,21 @@ public class OnboardingInvitation {
     public void markSubmitted(Instant submittedAt) {
         this.status = InvitationStatus.SUBMITTED;
         this.submittedAt = submittedAt;
+    }
+
+    public void markApproved(Instant approvedAt) {
+        if (status != InvitationStatus.SUBMITTED) {
+            throw new BadRequestException("Questionnaire can only be approved from SUBMITTED status");
+        }
+        this.status = InvitationStatus.APPROVED;
+        this.approvedAt = approvedAt;
+    }
+
+    public void reopenSubmittedFromApproved() {
+        if (status != InvitationStatus.APPROVED) {
+            throw new BadRequestException("Questionnaire can only be reopened from APPROVED status");
+        }
+        this.status = InvitationStatus.SUBMITTED;
+        this.approvedAt = null;
     }
 }

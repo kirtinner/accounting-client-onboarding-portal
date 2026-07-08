@@ -20,6 +20,7 @@ export default function InvitationsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [modalMode, setModalMode] = useState(null);
+  const [modalInvitation, setModalInvitation] = useState(null);
   const [pendingCancelInvitationId, setPendingCancelInvitationId] = useState(null);
   const [errorMessage, setErrorMessage] = useState(null);
 
@@ -46,6 +47,13 @@ export default function InvitationsPage() {
         }
         return nextInvitations.some((invitation) => invitation.id === preferredSelectedId) ? preferredSelectedId : null;
       });
+      setModalInvitation((current) => {
+        if (!current?.id) {
+          return current;
+        }
+        return nextInvitations.find((invitation) => invitation.id === current.id) || current;
+      });
+      return nextInvitations;
     } catch (error) {
       setInvitations([]);
       setSelectedInvitationId(null);
@@ -57,6 +65,7 @@ export default function InvitationsPage() {
 
   function openCreateModal() {
     setErrorMessage(null);
+    setModalInvitation(null);
     setModalMode('create');
   }
 
@@ -67,6 +76,7 @@ export default function InvitationsPage() {
 
     setSelectedInvitationId(invitation.id);
     setErrorMessage(null);
+    setModalInvitation(invitation);
     setModalMode('details');
   }
 
@@ -74,7 +84,9 @@ export default function InvitationsPage() {
     setSaving(true);
     try {
       const createdInvitation = await createInvitation(payload);
-      setModalMode(null);
+      setSelectedInvitationId(createdInvitation?.id || null);
+      setModalInvitation(createdInvitation);
+      setModalMode('details');
       await loadInvitations(createdInvitation?.id || null);
     } catch (error) {
       setErrorMessage(error.message);
@@ -86,8 +98,8 @@ export default function InvitationsPage() {
   async function handleUpdateInvitation(id, payload) {
     setSaving(true);
     try {
-      await updateInvitation(id, payload);
-      setModalMode(null);
+      const updatedInvitation = await updateInvitation(id, payload);
+      setModalInvitation(updatedInvitation);
       await loadInvitations(id);
     } catch (error) {
       setErrorMessage(error.message);
@@ -101,6 +113,7 @@ export default function InvitationsPage() {
     try {
       await sendInvitation(id, payload);
       setModalMode(null);
+      setModalInvitation(null);
       await loadInvitations(id);
     } catch (error) {
       setErrorMessage(error.message);
@@ -120,6 +133,7 @@ export default function InvitationsPage() {
       await cancelInvitation(id);
       setPendingCancelInvitationId(null);
       setModalMode(null);
+      setModalInvitation(null);
       await loadInvitations(id);
     } catch (error) {
       setErrorMessage(error.message);
@@ -165,12 +179,15 @@ export default function InvitationsPage() {
         />
       </Card>
 
-      {modalMode && (modalMode === 'create' || selectedInvitation) && (
+      {modalMode && (modalMode === 'create' || modalInvitation) && (
         <InvitationDetailsModal
           mode={modalMode}
-          invitation={modalMode === 'details' ? selectedInvitation : null}
+          invitation={modalMode === 'details' ? modalInvitation : null}
           saving={saving}
-          onClose={() => setModalMode(null)}
+          onClose={() => {
+            setModalMode(null);
+            setModalInvitation(null);
+          }}
           onCreate={handleCreateInvitation}
           onUpdate={handleUpdateInvitation}
           onSend={handleSendInvitation}

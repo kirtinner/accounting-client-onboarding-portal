@@ -24,6 +24,12 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.BAD_REQUEST, exception.getMessage(), request);
     }
 
+    @ExceptionHandler(NotImplementedException.class)
+    public ResponseEntity<ApiErrorResponse> handleNotImplemented(NotImplementedException exception,
+                                                                 HttpServletRequest request) {
+        return buildResponse(HttpStatus.NOT_IMPLEMENTED, exception.getMessage(), request);
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiErrorResponse> handleValidation(MethodArgumentNotValidException exception,
                                                             HttpServletRequest request) {

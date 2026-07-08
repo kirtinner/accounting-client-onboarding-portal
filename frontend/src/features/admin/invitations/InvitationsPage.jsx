@@ -145,7 +145,7 @@ export default function InvitationsPage() {
   return (
     <>
       <PageHeader
-        title="Client Invitations"
+        title="Invitations"
         description="Manage onboarding invitations sent to new clients."
         action={
           <div className="page-actions">

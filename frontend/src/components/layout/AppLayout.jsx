@@ -19,7 +19,7 @@ export default function AppLayout({ children, activePage = 'invitations', onNavi
               href="/"
               onClick={navigate('invitations')}
             >
-              Client Invitations
+              Invitations
             </a>
             <a
               className={`nav-item ${activePage === 'questionnaires' ? 'active' : ''}`}
@@ -28,8 +28,13 @@ export default function AppLayout({ children, activePage = 'invitations', onNavi
             >
               Questionnaires
             </a>
-            <span className="nav-item disabled" aria-disabled="true">Documents</span>
-            <span className="nav-item disabled" aria-disabled="true">Xero</span>
+            <a
+              className={`nav-item ${activePage === 'clients' ? 'active' : ''}`}
+              href="/clients"
+              onClick={navigate('clients')}
+            >
+              Clients
+            </a>
           </nav>
         </aside>
         <main className="main-content">{children}</main>

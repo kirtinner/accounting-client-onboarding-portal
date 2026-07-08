@@ -12,6 +12,14 @@
   --primary-soft: #dbeafe;
   --primary-softer: #eaf2ff;
   --section-header-bg: #dbeafe;
+  --table-header-bg: #dceaff;
+  --selected-row-bg: #edf5ff;
+  --selected-row-hover-bg: #e4f0ff;
+  --table-cell-padding-y: 8px;
+  --table-cell-padding-x: 12px;
+  --table-header-padding-y: 10px;
+  --status-badge-padding-y: 1px;
+  --status-badge-padding-x: 7px;
   --danger: #b42318;
   --danger-bg: #fff4f2;
   --focus-ring: #bfdbfe;
@@ -60,7 +68,7 @@ select {
 .brand-logo {
   display: block;
   width: auto;
-  height: 42px;
+  height: 32px;
   object-fit: contain;
 }
 
@@ -90,6 +98,14 @@ select {
   display: flex;
   flex-direction: column;
   gap: 4px;
+}
+
+.nav-section-heading {
+  padding: 0 12px 8px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
 }
 
 .nav-item {
@@ -216,7 +232,7 @@ select {
 
 .data-table th,
 .data-table td {
-  padding: 13px 14px;
+  padding: var(--table-cell-padding-y) var(--table-cell-padding-x);
   border-bottom: 1px solid var(--border);
   text-align: left;
   vertical-align: middle;
@@ -224,14 +240,14 @@ select {
 }
 
 .data-table thead tr {
-  background: #dceaff;
+  background: var(--table-header-bg);
 }
 
 .data-table thead th {
-  padding: 16px 14px;
+  padding: var(--table-header-padding-y) var(--table-cell-padding-x);
   border-bottom: 2px solid #b7c8df;
   color: #40566f;
-  background: #dceaff;
+  background: var(--table-header-bg);
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 0;
@@ -256,17 +272,17 @@ select {
 }
 
 .data-table tbody tr.selected-row td {
-  background: var(--primary-soft);
+  background: var(--selected-row-bg);
   font-weight: 600;
 }
 
 .data-table tbody tr.selected-row td:first-child {
   border-left: 3px solid var(--primary);
-  padding-left: 11px;
+  padding-left: calc(var(--table-cell-padding-x) - 3px);
 }
 
 .data-table tbody tr.selected-row:hover td {
-  background: #cfe3ff;
+  background: var(--selected-row-hover-bg);
 }
 
 .data-table tbody tr.selected-row:hover td:first-child {
@@ -275,6 +291,15 @@ select {
 
 .empty-cell {
   height: 88px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.empty-state {
+  min-height: 160px;
+  display: grid;
+  place-items: center;
+  padding: 28px;
   color: var(--text-muted);
   text-align: center;
 }
@@ -293,9 +318,9 @@ select {
 .status-badge {
   display: inline-flex;
   align-items: center;
-  min-height: 24px;
+  min-height: 20px;
   border-radius: 6px;
-  padding: 3px 8px;
+  padding: var(--status-badge-padding-y) var(--status-badge-padding-x);
   font-size: 12px;
   font-weight: 700;
   border: 1px solid transparent;

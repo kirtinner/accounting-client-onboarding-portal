@@ -48,9 +48,22 @@ public class OnboardingInvitationService {
         return toResponse(repository.save(invitation));
     }
 
+    //    @Transactional(readOnly = true)
+//    public List<OnboardingInvitationResponse> getInvitations() {
+//        return repository.findAllByOrderByCreatedAtDesc().stream()
+//                .map(this::toResponse)
+//                .toList();
+//    }
     @Transactional(readOnly = true)
-    public List<OnboardingInvitationResponse> getInvitations() {
-        return repository.findAllByOrderByCreatedAtDesc().stream()
+    public List<OnboardingInvitationResponse> getInvitations(List<InvitationStatus> statuses) {
+        List<OnboardingInvitation> onboardingInvitations;
+        if (statuses == null || statuses.isEmpty()) {
+            onboardingInvitations = repository.findAllByOrderByCreatedAtDesc();
+        } else {
+            onboardingInvitations = repository.findAllByStatusInOrderByCreatedAtDesc(statuses);
+        }
+
+        return onboardingInvitations.stream()
                 .map(this::toResponse)
                 .toList();
     }

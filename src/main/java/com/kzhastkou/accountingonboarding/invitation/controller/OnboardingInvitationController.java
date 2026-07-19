@@ -3,17 +3,11 @@ package com.kzhastkou.accountingonboarding.invitation.controller;
 import com.kzhastkou.accountingonboarding.invitation.dto.CreateOnboardingInvitationRequest;
 import com.kzhastkou.accountingonboarding.invitation.dto.OnboardingInvitationResponse;
 import com.kzhastkou.accountingonboarding.invitation.dto.UpdateOnboardingInvitationRequest;
+import com.kzhastkou.accountingonboarding.invitation.entity.InvitationStatus;
 import com.kzhastkou.accountingonboarding.invitation.service.OnboardingInvitationService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -33,9 +27,15 @@ public class OnboardingInvitationController {
         return service.createInvitation(request);
     }
 
+//    @GetMapping
+//    public List<OnboardingInvitationResponse> getInvitations() {
+//        return service.getInvitations();
+//    }
+
     @GetMapping
-    public List<OnboardingInvitationResponse> getInvitations() {
-        return service.getInvitations();
+    public List<OnboardingInvitationResponse> getInvitations(
+            @RequestParam(required = false) List<InvitationStatus> statuses) {
+        return service.getInvitations(statuses);
     }
 
     @GetMapping("/{id}")

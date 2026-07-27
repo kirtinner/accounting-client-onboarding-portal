@@ -11,6 +11,7 @@ import com.kzhastkou.accountingonboarding.invitation.entity.OnboardingInvitation
 import com.kzhastkou.accountingonboarding.invitation.repository.OnboardingInvitationRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -48,16 +49,10 @@ public class OnboardingInvitationService {
         return toResponse(repository.save(invitation));
     }
 
-    //    @Transactional(readOnly = true)
-//    public List<OnboardingInvitationResponse> getInvitations() {
-//        return repository.findAllByOrderByCreatedAtDesc().stream()
-//                .map(this::toResponse)
-//                .toList();
-//    }
     @Transactional(readOnly = true)
     public List<OnboardingInvitationResponse> getInvitations(List<InvitationStatus> statuses) {
         List<OnboardingInvitation> onboardingInvitations;
-        if (statuses == null || statuses.isEmpty()) {
+        if (CollectionUtils.isEmpty(statuses)) {
             onboardingInvitations = repository.findAllByOrderByCreatedAtDesc();
         } else {
             onboardingInvitations = repository.findAllByStatusInOrderByCreatedAtDesc(statuses);

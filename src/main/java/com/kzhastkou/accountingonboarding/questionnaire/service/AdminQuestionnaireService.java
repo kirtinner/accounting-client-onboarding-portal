@@ -10,8 +10,10 @@ import com.kzhastkou.accountingonboarding.questionnaire.dto.AdminQuestionnaireSu
 import com.kzhastkou.accountingonboarding.questionnaire.dto.AdminQuestionnaireUpdateRequest;
 import com.kzhastkou.accountingonboarding.questionnaire.entity.Questionnaire;
 import com.kzhastkou.accountingonboarding.questionnaire.repository.QuestionnaireRepository;
+import jakarta.persistence.criteria.CriteriaBuilder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 
 import java.time.Instant;
 import java.util.List;
@@ -26,8 +28,14 @@ public class AdminQuestionnaireService {
     }
 
     @Transactional(readOnly = true)
-    public List<AdminQuestionnaireSummaryResponse> getSubmittedQuestionnaires() {
-        return repository.findSubmittedForAdminReview().stream()
+    public List<AdminQuestionnaireSummaryResponse> getQuestionnaires(List<InvitationStatus> invitationStatuses) {
+        List<InvitationStatus> effectiveStatuses =
+                CollectionUtils.isEmpty(invitationStatuses)
+                        ? List.of(InvitationStatus.SUBMITTED, InvitationStatus.APPROVED, InvitationStatus.XPM_SENT)
+                        : invitationStatuses;
+
+        return repository.findAllForAdminReviewByInvitationStatuses(effectiveStatuses)
+                .stream()
                 .map(this::toSummaryResponse)
                 .toList();
     }

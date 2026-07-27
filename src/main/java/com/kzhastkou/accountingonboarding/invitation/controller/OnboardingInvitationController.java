@@ -27,11 +27,6 @@ public class OnboardingInvitationController {
         return service.createInvitation(request);
     }
 
-//    @GetMapping
-//    public List<OnboardingInvitationResponse> getInvitations() {
-//        return service.getInvitations();
-//    }
-
     @GetMapping
     public List<OnboardingInvitationResponse> getInvitations(
             @RequestParam(required = false) List<InvitationStatus> statuses) {

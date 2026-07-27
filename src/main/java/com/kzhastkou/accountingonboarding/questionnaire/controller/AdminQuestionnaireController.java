@@ -1,17 +1,12 @@
 package com.kzhastkou.accountingonboarding.questionnaire.controller;
 
+import com.kzhastkou.accountingonboarding.invitation.entity.InvitationStatus;
 import com.kzhastkou.accountingonboarding.questionnaire.dto.AdminQuestionnaireDetailResponse;
 import com.kzhastkou.accountingonboarding.questionnaire.dto.AdminQuestionnaireSummaryResponse;
 import com.kzhastkou.accountingonboarding.questionnaire.dto.AdminQuestionnaireUpdateRequest;
 import com.kzhastkou.accountingonboarding.questionnaire.service.AdminQuestionnaireService;
 import jakarta.validation.Valid;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -26,8 +21,11 @@ public class AdminQuestionnaireController {
     }
 
     @GetMapping
-    public List<AdminQuestionnaireSummaryResponse> getSubmittedQuestionnaires() {
-        return service.getSubmittedQuestionnaires();
+    public List<AdminQuestionnaireSummaryResponse> getQuestionnaires(
+            @RequestParam(name = "statuses", required = false)
+            List<InvitationStatus> invitationStatuses) {
+
+        return service.getQuestionnaires(invitationStatuses);
     }
 
     @GetMapping("/{id}")
@@ -37,7 +35,7 @@ public class AdminQuestionnaireController {
 
     @PutMapping("/{id}")
     public AdminQuestionnaireDetailResponse updateQuestionnaire(@PathVariable Long id,
-                                                               @Valid @RequestBody AdminQuestionnaireUpdateRequest request) {
+                                                                @Valid @RequestBody AdminQuestionnaireUpdateRequest request) {
         return service.updateQuestionnaire(id, request);
     }
 

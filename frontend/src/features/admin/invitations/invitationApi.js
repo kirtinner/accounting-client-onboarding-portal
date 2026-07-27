@@ -2,8 +2,17 @@ import { apiRequest } from '../../../services/apiClient.js';
 
 const API_BASE = '/api/invitations';
 
-export function getInvitations() {
-  return apiRequest(API_BASE);
+export function getInvitations(statuses = []) {
+  const searchParams = new URLSearchParams();
+
+  statuses.forEach((status) => {
+    searchParams.append('statuses', status);
+  });
+
+  const queryString = searchParams.toString();
+  const url = queryString ? `${API_BASE}?${queryString}` : API_BASE;
+
+  return apiRequest(url);
 }
 
 export function createInvitation(payload) {

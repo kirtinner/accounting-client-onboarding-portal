@@ -2,7 +2,7 @@ package com.kzhastkou.accountingonboarding.questionnaire.service;
 
 import com.kzhastkou.accountingonboarding.common.exception.BadRequestException;
 import com.kzhastkou.accountingonboarding.common.exception.NotImplementedException;
-import com.kzhastkou.accountingonboarding.invitation.entity.ClientType;
+import com.kzhastkou.accountingonboarding.common.model.ClientType;
 import com.kzhastkou.accountingonboarding.invitation.entity.InvitationStatus;
 import com.kzhastkou.accountingonboarding.invitation.entity.OnboardingInvitation;
 import com.kzhastkou.accountingonboarding.questionnaire.dto.AdminQuestionnaireUpdateRequest;
@@ -55,6 +55,7 @@ class AdminQuestionnaireServiceTest {
         when(repository.findByIdWithInvitation(1L)).thenReturn(Optional.of(questionnaire));
 
         AdminQuestionnaireDetailResponse response = service.updateQuestionnaire(1L, new AdminQuestionnaireUpdateRequest(
+                ClientType.INDIVIDUAL,
                 "Taylor",
                 "James",
                 "Brown",
@@ -133,18 +134,22 @@ class AdminQuestionnaireServiceTest {
                 "Alex Smith",
                 "alex@example.com",
                 ClientType.INDIVIDUAL,
-                invitationStatus,
                 now,
-                now.plus(Duration.ofDays(10)),
                 null
         );
+        invitation.markSent(now, Duration.ofDays(10));
+        invitation.markSubmitted(now);
         Questionnaire questionnaire = new Questionnaire(invitation, request(true), now);
         questionnaire.submit(now);
+        if (invitationStatus == InvitationStatus.APPROVED) {
+            invitation.markApproved(now);
+        }
         return questionnaire;
     }
 
     private QuestionnaireRequest request(boolean clientConfirmed) {
         return new QuestionnaireRequest(
+                ClientType.INDIVIDUAL,
                 "Alex",
                 null,
                 "Smith",

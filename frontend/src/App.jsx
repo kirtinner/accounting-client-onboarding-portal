@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import AppLayout from './components/layout/AppLayout.jsx';
 import ClientsPage from './features/admin/clients/ClientsPage.jsx';
 import InvitationsPage from './features/admin/invitations/InvitationsPage.jsx';
@@ -8,23 +8,53 @@ import PublicOnboardingPage from './features/public/onboarding/PublicOnboardingP
 export default function App() {
   const onboardingMatch = window.location.pathname.match(/^\/onboarding\/([^/]+)\/?$/);
   const initialAdminPage = getAdminPageFromPath(window.location.pathname);
+  const pageSearchesRef = useRef({
+    invitations: initialAdminPage === 'invitations' ? window.location.search : '',
+    questionnaires: initialAdminPage === 'questionnaires' ? window.location.search : '',
+    clients: initialAdminPage === 'clients' ? window.location.search : ''
+  });
   const [adminPage, setAdminPage] = useState(initialAdminPage);
+  const [locationKey, setLocationKey] = useState(0);
+
+  useEffect(() => {
+    function handlePopState() {
+      const nextPage = getAdminPageFromPath(window.location.pathname);
+      pageSearchesRef.current[nextPage] = window.location.search;
+      setAdminPage(nextPage);
+      setLocationKey((currentKey) => currentKey + 1);
+    }
+
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, []);
 
   if (onboardingMatch) {
     return <PublicOnboardingPage token={decodeURIComponent(onboardingMatch[1])} />;
   }
 
   function navigateAdmin(page) {
-    const nextPath = page === 'questionnaires' ? '/questionnaires' : page === 'clients' ? '/clients' : '/';
-    window.history.pushState({}, '', nextPath);
+    pageSearchesRef.current[adminPage] = window.location.search;
+
+    const nextPath = getAdminPath(page);
+    const nextSearch = pageSearchesRef.current[page] || '';
+
+    window.history.pushState({}, '', `${nextPath}${nextSearch}`);
     setAdminPage(page);
+    setLocationKey((currentKey) => currentKey + 1);
   }
 
   return (
     <AppLayout activePage={adminPage} onNavigate={navigateAdmin}>
-      {adminPage === 'questionnaires' && <QuestionnairesPage />}
+      {adminPage === 'questionnaires' && (
+        <QuestionnairesPage locationKey={locationKey} />
+      )}
       {adminPage === 'clients' && <ClientsPage />}
-      {adminPage === 'invitations' && <InvitationsPage />}
+      {adminPage === 'invitations' && (
+        <InvitationsPage locationKey={locationKey} />
+      )}
     </AppLayout>
   );
 }
@@ -37,4 +67,14 @@ function getAdminPageFromPath(pathname) {
     return 'clients';
   }
   return 'invitations';
+}
+
+function getAdminPath(page) {
+  if (page === 'questionnaires') {
+    return '/questionnaires';
+  }
+  if (page === 'clients') {
+    return '/clients';
+  }
+  return '/invitations';
 }

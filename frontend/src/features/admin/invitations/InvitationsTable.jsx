@@ -13,7 +13,7 @@ export default function InvitationsTable({ invitations, loading, selectedInvitat
   } else if (invitations.length === 0) {
     body = (
       <tr className="empty-row">
-        <td colSpan="6" className="empty-cell">No invitations yet. Create your first invitation.</td>
+        <td colSpan="6" className="empty-cell">No invitations.</td>
       </tr>
     );
   } else {

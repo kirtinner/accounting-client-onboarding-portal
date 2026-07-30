@@ -15,23 +15,6 @@ public interface QuestionnaireRepository extends JpaRepository<Questionnaire, Lo
 
     Optional<Questionnaire> findByInvitationId(Long invitationId);
 
-    Optional<Questionnaire> findByInvitationToken(UUID token);
-
-    boolean existsByInvitationId(Long invitationId);
-
-//    @Query("""
-//            select questionnaire
-//            from Questionnaire questionnaire
-//            join fetch questionnaire.invitation invitation
-//            where invitation.status in (
-//                com.kzhastkou.accountingonboarding.invitation.entity.InvitationStatus.SUBMITTED,
-//                com.kzhastkou.accountingonboarding.invitation.entity.InvitationStatus.APPROVED
-//            )
-//              and questionnaire.submittedAt is not null
-//            order by questionnaire.submittedAt desc
-//            """)
-//    List<Questionnaire> findSubmittedForAdminReview();
-
     @Query("""
         select questionnaire
         from Questionnaire questionnaire

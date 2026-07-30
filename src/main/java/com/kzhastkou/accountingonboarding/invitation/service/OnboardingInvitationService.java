@@ -40,9 +40,7 @@ public class OnboardingInvitationService {
                 request.preferredName(),
                 request.email(),
                 request.clientType(),
-                InvitationStatus.DRAFT,
                 createdAt,
-                createdAt.plus(INVITATION_VALIDITY),
                 null
         );
 
@@ -86,7 +84,7 @@ public class OnboardingInvitationService {
             throw new BadRequestException("Invitation can only be sent from DRAFT status");
         }
 
-        invitation.markSent(Instant.now());
+        invitation.markSent(Instant.now(), INVITATION_VALIDITY);
         invitationEmailService.sendInvitation(invitation);
         return toResponse(invitation);
     }

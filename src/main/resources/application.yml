@@ -52,3 +52,15 @@ xero:
   client-id: ${XERO_CLIENT_ID:}
   client-secret: ${XERO_CLIENT_SECRET:}
   redirect-uri: ${XERO_REDIRECT_URI:http://localhost:8080/api/xero/callback}
+
+# -----------------------------------------------------------------------------
+# Logging
+# -----------------------------------------------------------------------------
+logging:
+  file:
+    name: logs/application.log
+
+  level:
+    root: WARN
+    com.kzhastkou.accountingonboarding: WARN
+    com.kzhastkou.accountingonboarding.invitation.scheduler: INFO

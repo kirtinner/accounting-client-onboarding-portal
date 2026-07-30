@@ -16,7 +16,7 @@ export default function AppLayout({ children, activePage = 'invitations', onNavi
           <nav className="nav-list">
             <a
               className={`nav-item ${activePage === 'invitations' ? 'active' : ''}`}
-              href="/"
+              href="/invitations"
               onClick={navigate('invitations')}
             >
               Invitations

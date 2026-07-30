@@ -1,6 +1,6 @@
 package com.kzhastkou.accountingonboarding.questionnaire.dto;
 
-import com.kzhastkou.accountingonboarding.invitation.entity.ClientType;
+import com.kzhastkou.accountingonboarding.common.model.ClientType;
 
 import java.time.Instant;
 import java.util.UUID;

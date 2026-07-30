@@ -1,11 +1,14 @@
 package com.kzhastkou.accountingonboarding.questionnaire.dto;
 
+import com.kzhastkou.accountingonboarding.common.model.ClientType;
+
 import java.time.Instant;
 import java.time.LocalDate;
 
 public record QuestionnaireResponse(
         Long id,
         Long invitationId,
+        ClientType clientType,
         String firstName,
         String middleName,
         String lastName,

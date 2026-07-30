@@ -1,6 +1,7 @@
 package com.kzhastkou.accountingonboarding.invitation.entity;
 
 import com.kzhastkou.accountingonboarding.common.exception.BadRequestException;
+import com.kzhastkou.accountingonboarding.common.model.ClientType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -10,6 +11,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -41,7 +43,7 @@ public class OnboardingInvitation {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
-    @Column(name = "expires_at", nullable = false)
+    @Column(name = "expires_at")
     private Instant expiresAt;
 
     @Column(name = "sent_at")
@@ -66,14 +68,13 @@ public class OnboardingInvitation {
     }
 
     public OnboardingInvitation(UUID token, String preferredName, String email, ClientType clientType,
-                                InvitationStatus status, Instant createdAt, Instant expiresAt, String createdBy) {
+                                Instant createdAt, String createdBy) {
         this.token = token;
         this.preferredName = preferredName;
         this.email = email;
         this.clientType = clientType;
-        this.status = status;
+        this.status = InvitationStatus.DRAFT;
         this.createdAt = createdAt;
-        this.expiresAt = expiresAt;
         this.createdBy = createdBy;
     }
 
@@ -139,9 +140,23 @@ public class OnboardingInvitation {
         this.clientType = clientType;
     }
 
-    public void markSent(Instant sentAt) {
+    public void markSent(Instant sentAt, Duration validity) {
+        if (status != InvitationStatus.DRAFT) {
+            throw new BadRequestException("Invitation can only be sent from DRAFT status");
+        }
+        if (sentAt == null) {
+            throw new IllegalArgumentException("Sent timestamp must not be null");
+        }
+        if (validity == null) {
+            throw new IllegalArgumentException("Invitation validity must not be null");
+        }
+        if (validity.isZero() || validity.isNegative()) {
+            throw new IllegalArgumentException("Invitation validity must be positive");
+        }
+
         this.status = InvitationStatus.SENT;
         this.sentAt = sentAt;
+        this.expiresAt = sentAt.plus(validity);
     }
 
     public void markCancelled(Instant cancelledAt) {

@@ -1,6 +1,6 @@
 package com.kzhastkou.accountingonboarding.invitation.dto;
 
-import com.kzhastkou.accountingonboarding.invitation.entity.ClientType;
+import com.kzhastkou.accountingonboarding.common.model.ClientType;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

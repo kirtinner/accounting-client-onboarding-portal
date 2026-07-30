@@ -1,9 +1,7 @@
-package com.kzhastkou.accountingonboarding.questionnaire.entity;
+package com.kzhastkou.accountingonboarding.client.entity;
 
 import com.kzhastkou.accountingonboarding.common.model.ClientType;
-import com.kzhastkou.accountingonboarding.invitation.entity.OnboardingInvitation;
-import com.kzhastkou.accountingonboarding.questionnaire.dto.AdminQuestionnaireUpdateRequest;
-import com.kzhastkou.accountingonboarding.questionnaire.dto.QuestionnaireRequest;
+import com.kzhastkou.accountingonboarding.questionnaire.entity.Questionnaire;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -12,22 +10,29 @@ import jakarta.validation.constraints.Size;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.Objects;
 
 @Entity
-@Table(name = "questionnaires")
-public class Questionnaire {
+@Table(name = "clients")
+public class Client {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @NotNull
     @Enumerated(EnumType.STRING)
     @Column(name = "client_type", nullable = false, length = 50)
     private ClientType clientType;
 
+    @Size(max = 255)
+    @Column(name = "xpm_client_id")
+    private String xpmClientId;
+
+    @NotNull
     @OneToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "invitation_id", nullable = false, unique = true)
-    private OnboardingInvitation invitation;
+    @JoinColumn(name = "source_questionnaire_id", nullable = false, unique = true)
+    private Questionnaire sourceQuestionnaire;
 
     @NotBlank
     @Size(max = 255)
@@ -87,33 +92,26 @@ public class Questionnaire {
     @Column(nullable = false, length = 100)
     private String country = "Australia";
 
-    @Column(name = "client_confirmed", nullable = false)
-    private boolean clientConfirmed;
-
-    @Column(name = "submitted_at")
-    private Instant submittedAt;
-
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
-    protected Questionnaire() {
-    }
-
-    public Questionnaire(OnboardingInvitation invitation, QuestionnaireRequest request, Instant createdAt) {
-        this.invitation = invitation;
-        this.createdAt = createdAt;
-        updateFrom(request, createdAt);
-    }
-
     public Long getId() {
         return id;
     }
 
-    public OnboardingInvitation getInvitation() {
-        return invitation;
+    public ClientType getClientType() {
+        return clientType;
+    }
+
+    public String getXpmClientId() {
+        return xpmClientId;
+    }
+
+    public Questionnaire getSourceQuestionnaire() {
+        return sourceQuestionnaire;
     }
 
     public String getFirstName() {
@@ -164,14 +162,6 @@ public class Questionnaire {
         return country;
     }
 
-    public boolean isClientConfirmed() {
-        return clientConfirmed;
-    }
-
-    public Instant getSubmittedAt() {
-        return submittedAt;
-    }
-
     public Instant getCreatedAt() {
         return createdAt;
     }
@@ -180,46 +170,59 @@ public class Questionnaire {
         return updatedAt;
     }
 
-    public ClientType getClientType() { return clientType; }
+    public void assignXpmClientId(String xpmClientId) {
+        if (this.xpmClientId != null) {
+            throw new IllegalStateException(
+                    "XPM client ID has already been assigned."
+            );
+        }
 
-    public void updateFrom(QuestionnaireRequest request, Instant updatedAt) {
-        this.clientType = request.clientType();
-        this.firstName = request.firstName();
-        this.middleName = request.middleName();
-        this.lastName = request.lastName();
-        this.dateOfBirth = request.dateOfBirth();
-        this.email = request.email();
-        this.mobilePhone = request.mobilePhone();
-        this.addressLine1 = request.addressLine1();
-        this.addressLine2 = request.addressLine2();
-        this.suburb = request.suburb();
-        this.state = request.state();
-        this.postcode = request.postcode();
-        this.country = request.country();
-        this.clientConfirmed = request.clientConfirmed();
-        this.updatedAt = updatedAt;
+        if (xpmClientId == null || xpmClientId.isBlank()) {
+            throw new IllegalArgumentException(
+                    "XPM client ID must not be blank."
+            );
+        }
+
+        this.xpmClientId = xpmClientId.trim();
     }
 
-    public void updateFrom(AdminQuestionnaireUpdateRequest request, Instant updatedAt) {
-        this.clientType = request.clientType();
-        this.firstName = request.firstName();
-        this.middleName = request.middleName();
-        this.lastName = request.lastName();
-        this.dateOfBirth = request.dateOfBirth();
-        this.email = request.email();
-        this.mobilePhone = request.mobilePhone();
-        this.addressLine1 = request.addressLine1();
-        this.addressLine2 = request.addressLine2();
-        this.suburb = request.suburb();
-        this.state = request.state();
-        this.postcode = request.postcode();
-        this.country = request.country();
-        this.updatedAt = updatedAt;
+    @PrePersist
+    private void onCreate() {
+        Instant now = Instant.now();
+
+        if (createdAt == null) {
+            createdAt = now;
+        }
+
+        updatedAt = now;
     }
 
-    public void submit(Instant submittedAt) {
-        this.clientConfirmed = true;
-        this.submittedAt = submittedAt;
-        this.updatedAt = submittedAt;
+    @PreUpdate
+    private void onUpdate() {
+        updatedAt = Instant.now();
+    }
+
+    protected Client() {
+    }
+
+    public Client(Questionnaire sourceQuestionnaire) {
+        this.sourceQuestionnaire = Objects.requireNonNull(sourceQuestionnaire, "Source questionnaire must not be null");
+        fillFrom(sourceQuestionnaire);
+    }
+
+    private void fillFrom(Questionnaire sourceQuestionnaire) {
+        this.clientType = sourceQuestionnaire.getClientType();
+        this.firstName = sourceQuestionnaire.getFirstName();
+        this.middleName = sourceQuestionnaire.getMiddleName();
+        this.lastName = sourceQuestionnaire.getLastName();
+        this.dateOfBirth = sourceQuestionnaire.getDateOfBirth();
+        this.email = sourceQuestionnaire.getEmail();
+        this.mobilePhone = sourceQuestionnaire.getMobilePhone();
+        this.addressLine1 = sourceQuestionnaire.getAddressLine1();
+        this.addressLine2 = sourceQuestionnaire.getAddressLine2();
+        this.suburb = sourceQuestionnaire.getSuburb();
+        this.state = sourceQuestionnaire.getState();
+        this.postcode = sourceQuestionnaire.getPostcode();
+        this.country = sourceQuestionnaire.getCountry();
     }
 }

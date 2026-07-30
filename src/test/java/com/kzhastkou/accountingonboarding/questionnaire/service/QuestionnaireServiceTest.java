@@ -1,7 +1,7 @@
 package com.kzhastkou.accountingonboarding.questionnaire.service;
 
 import com.kzhastkou.accountingonboarding.common.exception.BadRequestException;
-import com.kzhastkou.accountingonboarding.invitation.entity.ClientType;
+import com.kzhastkou.accountingonboarding.common.model.ClientType;
 import com.kzhastkou.accountingonboarding.invitation.entity.InvitationStatus;
 import com.kzhastkou.accountingonboarding.invitation.entity.OnboardingInvitation;
 import com.kzhastkou.accountingonboarding.questionnaire.dto.QuestionnaireRequest;
@@ -25,6 +25,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 class QuestionnaireServiceTest {
+
+    private static final Duration INVITATION_VALIDITY = Duration.ofDays(10);
 
     private QuestionnaireRepository repository;
     private QuestionnaireService service;
@@ -104,21 +106,20 @@ class QuestionnaireServiceTest {
                 "Alex Smith",
                 "alex@example.com",
                 ClientType.INDIVIDUAL,
-                InvitationStatus.DRAFT,
                 Instant.now(),
-                Instant.now().plus(Duration.ofDays(10)),
                 null
         );
     }
 
     private OnboardingInvitation sentInvitation() {
         OnboardingInvitation invitation = draftInvitation();
-        invitation.markSent(Instant.now());
+        invitation.markSent(Instant.now(), INVITATION_VALIDITY);
         return invitation;
     }
 
     private QuestionnaireRequest request(boolean clientConfirmed) {
         return new QuestionnaireRequest(
+                ClientType.INDIVIDUAL,
                 "Alex",
                 null,
                 "Smith",
@@ -137,6 +138,7 @@ class QuestionnaireServiceTest {
 
     private QuestionnaireRequest updatedRequest(boolean clientConfirmed) {
         return new QuestionnaireRequest(
+                ClientType.INDIVIDUAL,
                 "Taylor",
                 "Lee",
                 "Brown",

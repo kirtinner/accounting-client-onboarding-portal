@@ -1,6 +1,6 @@
 package com.kzhastkou.accountingonboarding.invitation.dto;
 
-import com.kzhastkou.accountingonboarding.invitation.entity.ClientType;
+import com.kzhastkou.accountingonboarding.common.model.ClientType;
 import com.kzhastkou.accountingonboarding.invitation.entity.InvitationStatus;
 
 import java.time.Instant;

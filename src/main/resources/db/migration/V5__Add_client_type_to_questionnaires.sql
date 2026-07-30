@@ -1,0 +1,5 @@
+ALTER TABLE questionnaires
+    ADD COLUMN client_type VARCHAR(50) NOT NULL DEFAULT 'INDIVIDUAL';
+
+ALTER TABLE questionnaires
+    ALTER COLUMN client_type DROP DEFAULT;

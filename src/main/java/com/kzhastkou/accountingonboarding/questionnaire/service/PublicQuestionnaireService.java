@@ -93,6 +93,7 @@ public class PublicQuestionnaireService {
         return new QuestionnaireResponse(
                 questionnaire.getId(),
                 questionnaire.getInvitation().getId(),
+                questionnaire.getClientType(),
                 questionnaire.getFirstName(),
                 questionnaire.getMiddleName(),
                 questionnaire.getLastName(),

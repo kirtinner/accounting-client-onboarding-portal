@@ -2,7 +2,7 @@ package com.kzhastkou.accountingonboarding.questionnaire.service;
 
 import com.kzhastkou.accountingonboarding.common.exception.BadRequestException;
 import com.kzhastkou.accountingonboarding.common.exception.NotFoundException;
-import com.kzhastkou.accountingonboarding.invitation.entity.ClientType;
+import com.kzhastkou.accountingonboarding.common.model.ClientType;
 import com.kzhastkou.accountingonboarding.invitation.entity.InvitationStatus;
 import com.kzhastkou.accountingonboarding.invitation.entity.OnboardingInvitation;
 import com.kzhastkou.accountingonboarding.invitation.repository.OnboardingInvitationRepository;
@@ -29,6 +29,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 class PublicQuestionnaireServiceTest {
+
+    private static final Duration INVITATION_VALIDITY = Duration.ofDays(10);
 
     private OnboardingInvitationRepository invitationRepository;
     private QuestionnaireRepository questionnaireRepository;
@@ -139,16 +141,14 @@ class PublicQuestionnaireServiceTest {
                 "Alex Smith",
                 "alex@example.com",
                 ClientType.INDIVIDUAL,
-                InvitationStatus.DRAFT,
                 Instant.now(),
-                Instant.now().plus(Duration.ofDays(10)),
                 null
         );
     }
 
     private OnboardingInvitation sentInvitation() {
         OnboardingInvitation invitation = draftInvitation();
-        invitation.markSent(Instant.now());
+        invitation.markSent(Instant.now(), INVITATION_VALIDITY);
         return invitation;
     }
 
@@ -158,17 +158,19 @@ class PublicQuestionnaireServiceTest {
                 "Alex Smith",
                 "alex@example.com",
                 ClientType.INDIVIDUAL,
-                InvitationStatus.DRAFT,
                 Instant.now().minus(Duration.ofDays(12)),
-                Instant.now().minus(Duration.ofDays(2)),
                 null
         );
-        invitation.markSent(Instant.now().minus(Duration.ofDays(11)));
+        invitation.markSent(
+                Instant.now().minus(Duration.ofDays(11)),
+                Duration.ofDays(10)
+        );
         return invitation;
     }
 
     private QuestionnaireRequest request(boolean clientConfirmed) {
         return new QuestionnaireRequest(
+                ClientType.INDIVIDUAL,
                 "Alex",
                 null,
                 "Smith",

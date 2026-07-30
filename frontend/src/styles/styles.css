@@ -265,6 +265,12 @@ select {
   opacity: 0.55;
 }
 
+.questionnaire-filters__label,
+.questionnaire-filter-button,
+.questionnaire-filter-chip {
+  font-weight: 400;
+}
+
 .card {
   background: var(--surface);
   border: 1px solid var(--border);

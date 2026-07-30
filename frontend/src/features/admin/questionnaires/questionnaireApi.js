@@ -2,8 +2,17 @@ import { apiRequest } from '../../../services/apiClient.js';
 
 const API_BASE = '/api/questionnaires';
 
-export function getQuestionnaires() {
-  return apiRequest(API_BASE);
+export function getQuestionnaires(invitationStatuses = []) {
+  const searchParams = new URLSearchParams();
+
+  invitationStatuses.forEach((status) => {
+    searchParams.append('statuses', status);
+  });
+
+  const queryString = searchParams.toString();
+  const url = queryString ? `${API_BASE}?${queryString}` : API_BASE;
+
+  return apiRequest(url);
 }
 
 export function getQuestionnaire(id) {

@@ -10,7 +10,6 @@ import com.kzhastkou.accountingonboarding.questionnaire.dto.AdminQuestionnaireSu
 import com.kzhastkou.accountingonboarding.questionnaire.dto.AdminQuestionnaireUpdateRequest;
 import com.kzhastkou.accountingonboarding.questionnaire.entity.Questionnaire;
 import com.kzhastkou.accountingonboarding.questionnaire.repository.QuestionnaireRepository;
-import jakarta.persistence.criteria.CriteriaBuilder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
@@ -86,6 +85,7 @@ public class AdminQuestionnaireService {
         OnboardingInvitation invitation = questionnaire.getInvitation();
         return new AdminQuestionnaireSummaryResponse(
                 questionnaire.getId(),
+                questionnaire.getClientType(),
                 invitation.getId(),
                 invitation.getPreferredName(),
                 invitation.getEmail(),
@@ -108,6 +108,7 @@ public class AdminQuestionnaireService {
         OnboardingInvitation invitation = questionnaire.getInvitation();
         return new AdminQuestionnaireDetailResponse(
                 questionnaire.getId(),
+                questionnaire.getClientType(),
                 invitation.getId(),
                 invitation.getPreferredName(),
                 invitation.getEmail(),

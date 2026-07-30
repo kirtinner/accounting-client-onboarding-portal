@@ -5,7 +5,7 @@ import com.kzhastkou.accountingonboarding.email.InvitationEmailService;
 import com.kzhastkou.accountingonboarding.invitation.dto.CreateOnboardingInvitationRequest;
 import com.kzhastkou.accountingonboarding.invitation.dto.OnboardingInvitationResponse;
 import com.kzhastkou.accountingonboarding.invitation.dto.UpdateOnboardingInvitationRequest;
-import com.kzhastkou.accountingonboarding.invitation.entity.ClientType;
+import com.kzhastkou.accountingonboarding.common.model.ClientType;
 import com.kzhastkou.accountingonboarding.invitation.entity.InvitationStatus;
 import com.kzhastkou.accountingonboarding.invitation.entity.OnboardingInvitation;
 import com.kzhastkou.accountingonboarding.invitation.repository.OnboardingInvitationRepository;
@@ -13,18 +13,19 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class OnboardingInvitationServiceTest {
+
+    private static final Duration INVITATION_VALIDITY = Duration.ofDays(10);
 
     private OnboardingInvitationRepository repository;
     private InvitationEmailService invitationEmailService;
@@ -41,22 +42,22 @@ class OnboardingInvitationServiceTest {
     }
 
     @Test
-    void createInvitationCreatesDraftInvitationWithTokenAndExpiry() {
-        CreateOnboardingInvitationRequest request = new CreateOnboardingInvitationRequest(
-                "Alex Smith",
-                "alex@example.com",
-                ClientType.INDIVIDUAL
-        );
+    void createInvitationCreatesDraftInvitationWithoutExpiry() {
+        CreateOnboardingInvitationRequest request =
+                new CreateOnboardingInvitationRequest(
+                        "Alex Smith",
+                        "alex@example.com",
+                        ClientType.INDIVIDUAL
+                );
 
-        OnboardingInvitationResponse response = service.createInvitation(request);
+        OnboardingInvitationResponse response =
+                service.createInvitation(request);
 
         assertNotNull(response.token());
-        assertEquals("Alex Smith", response.preferredName());
-        assertEquals("alex@example.com", response.email());
-        assertEquals(ClientType.INDIVIDUAL, response.clientType());
         assertEquals(InvitationStatus.DRAFT, response.status());
         assertNotNull(response.createdAt());
-        assertEquals(Duration.ofDays(10), Duration.between(response.createdAt(), response.expiresAt()));
+        assertNull(response.sentAt());
+        assertNull(response.expiresAt());
     }
 
     @Test
@@ -68,7 +69,78 @@ class OnboardingInvitationServiceTest {
 
         assertEquals(InvitationStatus.SENT, response.status());
         assertNotNull(response.sentAt());
+        assertNotNull(response.expiresAt());
+        assertEquals(
+                response.sentAt().plus(INVITATION_VALIDITY),
+                response.expiresAt()
+        );
         verify(invitationEmailService).sendInvitation(invitation);
+    }
+
+    @Test
+    void markSentRejectsNullSentAt() {
+        OnboardingInvitation invitation = draftInvitation();
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> invitation.markSent(null, INVITATION_VALIDITY)
+        );
+        assertEquals(InvitationStatus.DRAFT, invitation.getStatus());
+        assertNull(invitation.getSentAt());
+        assertNull(invitation.getExpiresAt());
+    }
+
+    @Test
+    void markSentRejectsNullValidity() {
+        OnboardingInvitation invitation = draftInvitation();
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> invitation.markSent(Instant.now(), null)
+        );
+        assertEquals(InvitationStatus.DRAFT, invitation.getStatus());
+        assertNull(invitation.getSentAt());
+        assertNull(invitation.getExpiresAt());
+    }
+
+    @Test
+    void markSentRejectsZeroValidity() {
+        OnboardingInvitation invitation = draftInvitation();
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> invitation.markSent(Instant.now(), Duration.ZERO)
+        );
+        assertEquals(InvitationStatus.DRAFT, invitation.getStatus());
+        assertNull(invitation.getSentAt());
+        assertNull(invitation.getExpiresAt());
+    }
+
+    @Test
+    void markSentRejectsNegativeValidity() {
+        OnboardingInvitation invitation = draftInvitation();
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> invitation.markSent(Instant.now(), Duration.ofDays(-1))
+        );
+        assertEquals(InvitationStatus.DRAFT, invitation.getStatus());
+        assertNull(invitation.getSentAt());
+        assertNull(invitation.getExpiresAt());
+    }
+
+    @Test
+    void markSentRejectsInvalidStatus() {
+        OnboardingInvitation invitation = draftInvitation();
+        invitation.markCancelled(Instant.now());
+
+        assertThrows(
+                BadRequestException.class,
+                () -> invitation.markSent(Instant.now(), INVITATION_VALIDITY)
+        );
+        assertEquals(InvitationStatus.CANCELLED, invitation.getStatus());
+        assertNull(invitation.getSentAt());
+        assertNull(invitation.getExpiresAt());
     }
 
     @Test
@@ -134,9 +206,7 @@ class OnboardingInvitationServiceTest {
                 "Alex Smith",
                 "alex@example.com",
                 ClientType.INDIVIDUAL,
-                InvitationStatus.DRAFT,
-                java.time.Instant.now(),
-                java.time.Instant.now().plus(Duration.ofDays(10)),
+                Instant.now(),
                 null
         );
     }

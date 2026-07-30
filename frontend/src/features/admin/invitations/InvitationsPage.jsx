@@ -4,6 +4,12 @@ import Card from '../../../components/common/Card.jsx';
 import Message from '../../../components/common/Message.jsx';
 import ConfirmationDialog from '../../../components/dialogs/ConfirmationDialog.jsx';
 import PageHeader from '../../../components/layout/PageHeader.jsx';
+import {
+    normalizeStatuses,
+    parseStatusQuery,
+    pushStatusQuery,
+    replaceStatusQuery
+} from '../../../utils/statusQueryParams.js';
 import InvitationDetailsModal from './InvitationDetailsModal.jsx';
 import InvitationsTable from './InvitationsTable.jsx';
 import {
@@ -24,7 +30,7 @@ const INVITATION_STATUSES = [
     'CANCELLED'
 ];
 
-export default function InvitationsPage() {
+export default function InvitationsPage({ locationKey = 0 }) {
     const filtersRef = useRef(null);
 
     const [invitations, setInvitations] = useState([]);
@@ -36,8 +42,12 @@ export default function InvitationsPage() {
     const [pendingCancelInvitationId, setPendingCancelInvitationId] = useState(null);
     const [errorMessage, setErrorMessage] = useState(null);
 
-    const [appliedStatuses, setAppliedStatuses] = useState([]);
-    const [draftStatuses, setDraftStatuses] = useState([]);
+    const [appliedStatuses, setAppliedStatuses] = useState(() =>
+        getStatusesFromUrl()
+    );
+    const [draftStatuses, setDraftStatuses] = useState(() =>
+        getStatusesFromUrl()
+    );
     const [isFiltersOpen, setIsFiltersOpen] = useState(false);
 
     const selectedInvitation = useMemo(
@@ -54,8 +64,15 @@ export default function InvitationsPage() {
             : 'View Selected';
 
     useEffect(() => {
-        loadInvitations([]);
-    }, []);
+        const nextStatuses = getStatusesFromUrl();
+
+        replaceStatusQuery('/invitations', window.location.search, nextStatuses);
+        setAppliedStatuses(nextStatuses);
+        setDraftStatuses(nextStatuses);
+        setIsFiltersOpen(false);
+        setSelectedInvitationId(null);
+        loadInvitations(nextStatuses, null);
+    }, [locationKey]);
 
     async function loadInvitations(
         statuses = [],
@@ -157,8 +174,12 @@ export default function InvitationsPage() {
     }
 
     async function applyFilters() {
-        const nextStatuses = [...draftStatuses];
+        const nextStatuses = normalizeStatuses(
+            draftStatuses,
+            INVITATION_STATUSES
+        );
 
+        pushStatusQuery('/invitations', window.location.search, nextStatuses);
         setAppliedStatuses(nextStatuses);
         setIsFiltersOpen(false);
         setSelectedInvitationId(null);
@@ -171,10 +192,12 @@ export default function InvitationsPage() {
     }
 
     async function removeAppliedStatus(status) {
-        const nextStatuses = appliedStatuses.filter(
-            (appliedStatus) => appliedStatus !== status
+        const nextStatuses = normalizeStatuses(
+            appliedStatuses.filter((appliedStatus) => appliedStatus !== status),
+            INVITATION_STATUSES
         );
 
+        pushStatusQuery('/invitations', window.location.search, nextStatuses);
         setAppliedStatuses(nextStatuses);
         setDraftStatuses(nextStatuses);
         setSelectedInvitationId(null);
@@ -450,4 +473,8 @@ export default function InvitationsPage() {
             )}
         </>
     );
+}
+
+function getStatusesFromUrl() {
+    return parseStatusQuery(window.location.search, INVITATION_STATUSES);
 }

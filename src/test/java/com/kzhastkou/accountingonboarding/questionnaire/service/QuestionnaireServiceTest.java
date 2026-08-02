@@ -10,6 +10,7 @@ import com.kzhastkou.accountingonboarding.questionnaire.entity.Questionnaire;
 import com.kzhastkou.accountingonboarding.questionnaire.repository.QuestionnaireRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -152,6 +153,22 @@ class QuestionnaireServiceTest {
                 "3000",
                 "Australia",
                 clientConfirmed
+        );
+    }
+
+    @Test
+    void createOrUpdateForSentInvitationWithoutExpirationTimestampFails() {
+        // Arrange
+        OnboardingInvitation invitation = sentInvitation();
+        ReflectionTestUtils.setField(invitation, "expiresAt", null);
+
+        // Act + Assert
+        assertThrows(
+                BadRequestException.class,
+                () -> service.createOrUpdateForInvitation(
+                        invitation,
+                        request(false)
+                )
         );
     }
 }

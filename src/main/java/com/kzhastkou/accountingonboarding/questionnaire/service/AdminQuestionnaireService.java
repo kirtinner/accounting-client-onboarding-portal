@@ -1,5 +1,7 @@
 package com.kzhastkou.accountingonboarding.questionnaire.service;
 
+import com.kzhastkou.accountingonboarding.audit.entity.AuditAction;
+import com.kzhastkou.accountingonboarding.audit.service.AuditLogService;
 import com.kzhastkou.accountingonboarding.common.exception.BadRequestException;
 import com.kzhastkou.accountingonboarding.common.exception.NotImplementedException;
 import com.kzhastkou.accountingonboarding.common.exception.NotFoundException;
@@ -20,10 +22,14 @@ import java.util.List;
 @Service
 public class AdminQuestionnaireService {
 
-    private final QuestionnaireRepository repository;
+    private static final String QUESTIONNAIRE_ENTITY_TYPE = "QUESTIONNAIRE";
 
-    public AdminQuestionnaireService(QuestionnaireRepository repository) {
+    private final QuestionnaireRepository repository;
+    private final AuditLogService auditLogService;
+
+    public AdminQuestionnaireService(QuestionnaireRepository repository, AuditLogService auditLogService) {
         this.repository = repository;
+        this.auditLogService = auditLogService;
     }
 
     @Transactional(readOnly = true)
@@ -50,6 +56,12 @@ public class AdminQuestionnaireService {
     public AdminQuestionnaireDetailResponse updateQuestionnaire(Long id, AdminQuestionnaireUpdateRequest request) {
         Questionnaire questionnaire = findQuestionnaire(id);
         questionnaire.updateFrom(request, Instant.now());
+        auditLogService.recordSystemSuccess(
+                AuditAction.QUESTIONNAIRE_UPDATED,
+                QUESTIONNAIRE_ENTITY_TYPE,
+                questionnaire.getId(),
+                "Questionnaire updated"
+        );
         return toDetailResponse(questionnaire);
     }
 
@@ -57,6 +69,12 @@ public class AdminQuestionnaireService {
     public AdminQuestionnaireDetailResponse approveQuestionnaire(Long id) {
         Questionnaire questionnaire = findQuestionnaire(id);
         questionnaire.getInvitation().markApproved(Instant.now());
+        auditLogService.recordSystemSuccess(
+                AuditAction.QUESTIONNAIRE_APPROVED,
+                QUESTIONNAIRE_ENTITY_TYPE,
+                questionnaire.getId(),
+                "Questionnaire approved"
+        );
         return toDetailResponse(questionnaire);
     }
 
@@ -64,6 +82,12 @@ public class AdminQuestionnaireService {
     public AdminQuestionnaireDetailResponse reopenQuestionnaire(Long id) {
         Questionnaire questionnaire = findQuestionnaire(id);
         questionnaire.getInvitation().reopenSubmittedFromApproved();
+        auditLogService.recordSystemSuccess(
+                AuditAction.QUESTIONNAIRE_APPROVAL_CANCELLED,
+                QUESTIONNAIRE_ENTITY_TYPE,
+                questionnaire.getId(),
+                "Questionnaire approval cancelled"
+        );
         return toDetailResponse(questionnaire);
     }
 

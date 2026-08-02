@@ -64,7 +64,10 @@ public class QuestionnaireService {
         if (invitation.getStatus() != InvitationStatus.SENT) {
             throw new BadRequestException(message);
         }
-        if (!invitation.getExpiresAt().isAfter(Instant.now())) {
+
+        Instant expiresAt = invitation.getExpiresAt();
+
+        if (expiresAt == null || !expiresAt.isAfter(Instant.now())) {
             throw new BadRequestException("Invitation is expired");
         }
     }

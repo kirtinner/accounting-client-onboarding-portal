@@ -164,6 +164,20 @@ public class OnboardingInvitation {
         this.cancelledAt = cancelledAt;
     }
 
+    public void markExpired(Instant now) {
+        if (now == null) {
+            throw new IllegalArgumentException("Expiration timestamp must not be null");
+        }
+        if (status != InvitationStatus.SENT) {
+            throw new BadRequestException("Invitation can only expire from SENT status");
+        }
+        if (expiresAt == null || expiresAt.isAfter(now)) {
+            throw new BadRequestException("Invitation has not expired yet");
+        }
+
+        this.status = InvitationStatus.EXPIRED;
+    }
+
     public void markSubmitted(Instant submittedAt) {
         this.status = InvitationStatus.SUBMITTED;
         this.submittedAt = submittedAt;

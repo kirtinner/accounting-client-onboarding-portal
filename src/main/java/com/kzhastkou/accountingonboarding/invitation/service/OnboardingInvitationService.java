@@ -1,5 +1,7 @@
 package com.kzhastkou.accountingonboarding.invitation.service;
 
+import com.kzhastkou.accountingonboarding.audit.entity.AuditAction;
+import com.kzhastkou.accountingonboarding.audit.service.AuditLogService;
 import com.kzhastkou.accountingonboarding.common.exception.BadRequestException;
 import com.kzhastkou.accountingonboarding.common.exception.NotFoundException;
 import com.kzhastkou.accountingonboarding.email.InvitationEmailService;
@@ -22,14 +24,18 @@ import java.util.UUID;
 public class OnboardingInvitationService {
 
     private static final Duration INVITATION_VALIDITY = Duration.ofDays(10);
+    private static final String INVITATION_ENTITY_TYPE = "INVITATION";
 
     private final OnboardingInvitationRepository repository;
     private final InvitationEmailService invitationEmailService;
+    private final AuditLogService auditLogService;
 
     public OnboardingInvitationService(OnboardingInvitationRepository repository,
-                                       InvitationEmailService invitationEmailService) {
+                                       InvitationEmailService invitationEmailService,
+                                       AuditLogService auditLogService) {
         this.repository = repository;
         this.invitationEmailService = invitationEmailService;
+        this.auditLogService = auditLogService;
     }
 
     @Transactional
@@ -44,7 +50,14 @@ public class OnboardingInvitationService {
                 null
         );
 
-        return toResponse(repository.save(invitation));
+        OnboardingInvitation savedInvitation = repository.save(invitation);
+        auditLogService.recordSystemSuccess(
+                AuditAction.INVITATION_CREATED,
+                INVITATION_ENTITY_TYPE,
+                savedInvitation.getId(),
+                "Invitation created"
+        );
+        return toResponse(savedInvitation);
     }
 
     @Transactional(readOnly = true)
@@ -86,6 +99,12 @@ public class OnboardingInvitationService {
 
         invitation.markSent(Instant.now(), INVITATION_VALIDITY);
         invitationEmailService.sendInvitation(invitation);
+        auditLogService.recordSystemSuccess(
+                AuditAction.INVITATION_SENT,
+                INVITATION_ENTITY_TYPE,
+                invitation.getId(),
+                "Invitation sent"
+        );
         return toResponse(invitation);
     }
 
@@ -97,6 +116,12 @@ public class OnboardingInvitationService {
         }
 
         invitation.markCancelled(Instant.now());
+        auditLogService.recordSystemSuccess(
+                AuditAction.INVITATION_CANCELLED,
+                INVITATION_ENTITY_TYPE,
+                invitation.getId(),
+                "Invitation cancelled"
+        );
         return toResponse(invitation);
     }
 

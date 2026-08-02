@@ -13,6 +13,7 @@ import com.kzhastkou.accountingonboarding.questionnaire.entity.Questionnaire;
 import com.kzhastkou.accountingonboarding.questionnaire.repository.QuestionnaireRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -102,6 +103,24 @@ class PublicQuestionnaireServiceTest {
                 () -> service.createOrUpdateQuestionnaire(invitation.getToken().toString(), request(false)));
     }
 
+    @Test
+    void putRejectedForSentInvitationWithoutExpirationTimestamp() {
+        // Arrange
+        OnboardingInvitation invitation = sentInvitation();
+        ReflectionTestUtils.setField(invitation, "expiresAt", null);
+
+        when(invitationRepository.findByToken(invitation.getToken()))
+                .thenReturn(Optional.of(invitation));
+
+        // Act + Assert
+        assertThrows(
+                BadRequestException.class,
+                () -> service.createOrUpdateQuestionnaire(
+                        invitation.getToken().toString(),
+                        request(false)
+                )
+        );
+    }
     @Test
     void postSubmitChangesStatusToSubmitted() {
         OnboardingInvitation invitation = sentInvitation();

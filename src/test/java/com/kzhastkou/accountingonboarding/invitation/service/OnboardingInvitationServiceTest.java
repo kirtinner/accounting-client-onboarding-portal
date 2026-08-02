@@ -1,5 +1,7 @@
 package com.kzhastkou.accountingonboarding.invitation.service;
 
+import com.kzhastkou.accountingonboarding.audit.entity.AuditAction;
+import com.kzhastkou.accountingonboarding.audit.service.AuditLogService;
 import com.kzhastkou.accountingonboarding.common.exception.BadRequestException;
 import com.kzhastkou.accountingonboarding.email.InvitationEmailService;
 import com.kzhastkou.accountingonboarding.invitation.dto.CreateOnboardingInvitationRequest;
@@ -11,6 +13,7 @@ import com.kzhastkou.accountingonboarding.invitation.entity.OnboardingInvitation
 import com.kzhastkou.accountingonboarding.invitation.repository.OnboardingInvitationRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -19,8 +22,10 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class OnboardingInvitationServiceTest {
@@ -29,16 +34,22 @@ class OnboardingInvitationServiceTest {
 
     private OnboardingInvitationRepository repository;
     private InvitationEmailService invitationEmailService;
+    private AuditLogService auditLogService;
     private OnboardingInvitationService service;
 
     @BeforeEach
     void setUp() {
         repository = mock(OnboardingInvitationRepository.class);
         invitationEmailService = mock(InvitationEmailService.class);
-        service = new OnboardingInvitationService(repository, invitationEmailService);
+        auditLogService = mock(AuditLogService.class);
+        service = new OnboardingInvitationService(repository, invitationEmailService, auditLogService);
 
         when(repository.existsByToken(any(UUID.class))).thenReturn(false);
-        when(repository.save(any(OnboardingInvitation.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(repository.save(any(OnboardingInvitation.class))).thenAnswer(invocation -> {
+            OnboardingInvitation invitation = invocation.getArgument(0);
+            ReflectionTestUtils.setField(invitation, "id", 1L);
+            return invitation;
+        });
     }
 
     @Test
@@ -58,6 +69,12 @@ class OnboardingInvitationServiceTest {
         assertNotNull(response.createdAt());
         assertNull(response.sentAt());
         assertNull(response.expiresAt());
+        verify(auditLogService).recordSystemSuccess(
+                AuditAction.INVITATION_CREATED,
+                "INVITATION",
+                1L,
+                "Invitation created"
+        );
     }
 
     @Test
@@ -75,6 +92,12 @@ class OnboardingInvitationServiceTest {
                 response.expiresAt()
         );
         verify(invitationEmailService).sendInvitation(invitation);
+        verify(auditLogService).recordSystemSuccess(
+                AuditAction.INVITATION_SENT,
+                "INVITATION",
+                1L,
+                "Invitation sent"
+        );
     }
 
     @Test
@@ -153,6 +176,18 @@ class OnboardingInvitationServiceTest {
 
         assertEquals(InvitationStatus.CANCELLED, response.status());
         assertNotNull(response.cancelledAt());
+        verify(auditLogService).recordSystemSuccess(
+                AuditAction.INVITATION_SENT,
+                "INVITATION",
+                1L,
+                "Invitation sent"
+        );
+        verify(auditLogService).recordSystemSuccess(
+                AuditAction.INVITATION_CANCELLED,
+                "INVITATION",
+                1L,
+                "Invitation cancelled"
+        );
     }
 
     @Test
@@ -161,8 +196,10 @@ class OnboardingInvitationServiceTest {
         when(repository.findById(1L)).thenReturn(Optional.of(invitation));
 
         service.cancelInvitation(1L);
+        clearInvocations(auditLogService);
 
         assertThrows(BadRequestException.class, () -> service.sendInvitation(1L));
+        verifyNoInteractions(auditLogService);
     }
 
     @Test
@@ -192,16 +229,18 @@ class OnboardingInvitationServiceTest {
         when(repository.findById(1L)).thenReturn(Optional.of(invitation));
 
         service.sendInvitation(1L);
+        clearInvocations(auditLogService);
 
         assertThrows(BadRequestException.class, () -> service.updateInvitation(1L, new UpdateOnboardingInvitationRequest(
                 "Taylor Brown",
                 "taylor@example.com",
                 ClientType.COMPANY
         )));
+        verifyNoInteractions(auditLogService);
     }
 
     private OnboardingInvitation draftInvitation() {
-        return new OnboardingInvitation(
+        OnboardingInvitation invitation = new OnboardingInvitation(
                 UUID.randomUUID(),
                 "Alex Smith",
                 "alex@example.com",
@@ -209,5 +248,7 @@ class OnboardingInvitationServiceTest {
                 Instant.now(),
                 null
         );
+        ReflectionTestUtils.setField(invitation, "id", 1L);
+        return invitation;
     }
 }

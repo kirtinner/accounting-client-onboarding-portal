@@ -1,0 +1,11 @@
+package com.kzhastkou.accountingonboarding.audit.entity;
+
+public enum AuditAction {
+    INVITATION_CREATED,
+    INVITATION_SENT,
+    INVITATION_CANCELLED,
+    INVITATION_EXPIRED,
+    QUESTIONNAIRE_UPDATED,
+    QUESTIONNAIRE_APPROVED,
+    QUESTIONNAIRE_APPROVAL_CANCELLED
+}

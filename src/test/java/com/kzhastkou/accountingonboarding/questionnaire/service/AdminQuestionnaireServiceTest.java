@@ -1,5 +1,7 @@
 package com.kzhastkou.accountingonboarding.questionnaire.service;
 
+import com.kzhastkou.accountingonboarding.audit.entity.AuditAction;
+import com.kzhastkou.accountingonboarding.audit.service.AuditLogService;
 import com.kzhastkou.accountingonboarding.common.exception.BadRequestException;
 import com.kzhastkou.accountingonboarding.common.exception.NotImplementedException;
 import com.kzhastkou.accountingonboarding.common.model.ClientType;
@@ -12,6 +14,7 @@ import com.kzhastkou.accountingonboarding.questionnaire.entity.Questionnaire;
 import com.kzhastkou.accountingonboarding.questionnaire.repository.QuestionnaireRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -24,17 +27,21 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class AdminQuestionnaireServiceTest {
 
     private QuestionnaireRepository repository;
+    private AuditLogService auditLogService;
     private AdminQuestionnaireService service;
 
     @BeforeEach
     void setUp() {
         repository = mock(QuestionnaireRepository.class);
-        service = new AdminQuestionnaireService(repository);
+        auditLogService = mock(AuditLogService.class);
+        service = new AdminQuestionnaireService(repository, auditLogService);
     }
 
     @Test
@@ -46,6 +53,12 @@ class AdminQuestionnaireServiceTest {
 
         assertEquals(InvitationStatus.APPROVED, response.invitationStatus());
         assertNotNull(response.approvedAt());
+        verify(auditLogService).recordSystemSuccess(
+                AuditAction.QUESTIONNAIRE_APPROVED,
+                "QUESTIONNAIRE",
+                1L,
+                "Questionnaire approved"
+        );
     }
 
     @Test
@@ -78,6 +91,12 @@ class AdminQuestionnaireServiceTest {
         assertEquals(submittedAt, response.submittedAt());
         assertNull(response.approvedAt());
         assertNull(response.xpmSentAt());
+        verify(auditLogService).recordSystemSuccess(
+                AuditAction.QUESTIONNAIRE_UPDATED,
+                "QUESTIONNAIRE",
+                1L,
+                "Questionnaire updated"
+        );
     }
 
     @Test
@@ -86,6 +105,7 @@ class AdminQuestionnaireServiceTest {
         when(repository.findByIdWithInvitation(1L)).thenReturn(Optional.of(questionnaire));
 
         assertThrows(BadRequestException.class, () -> service.approveQuestionnaire(1L));
+        verifyNoInteractions(auditLogService);
     }
 
     @Test
@@ -98,6 +118,12 @@ class AdminQuestionnaireServiceTest {
 
         assertEquals(InvitationStatus.SUBMITTED, response.invitationStatus());
         assertNull(response.approvedAt());
+        verify(auditLogService).recordSystemSuccess(
+                AuditAction.QUESTIONNAIRE_APPROVAL_CANCELLED,
+                "QUESTIONNAIRE",
+                1L,
+                "Questionnaire approval cancelled"
+        );
     }
 
     @Test
@@ -106,6 +132,7 @@ class AdminQuestionnaireServiceTest {
         when(repository.findByIdWithInvitation(1L)).thenReturn(Optional.of(questionnaire));
 
         assertThrows(BadRequestException.class, () -> service.reopenQuestionnaire(1L));
+        verifyNoInteractions(auditLogService);
     }
 
     @Test
@@ -140,6 +167,7 @@ class AdminQuestionnaireServiceTest {
         invitation.markSent(now, Duration.ofDays(10));
         invitation.markSubmitted(now);
         Questionnaire questionnaire = new Questionnaire(invitation, request(true), now);
+        ReflectionTestUtils.setField(questionnaire, "id", 1L);
         questionnaire.submit(now);
         if (invitationStatus == InvitationStatus.APPROVED) {
             invitation.markApproved(now);

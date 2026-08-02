@@ -71,7 +71,10 @@ public class PublicQuestionnaireService {
         if (invitation.getStatus() != InvitationStatus.SENT) {
             throw new BadRequestException("Public questionnaire is only available for SENT invitations");
         }
-        if (!invitation.getExpiresAt().isAfter(Instant.now())) {
+
+        Instant expiresAt = invitation.getExpiresAt();
+
+        if (expiresAt == null || !expiresAt.isAfter(Instant.now())) {
             throw new BadRequestException("Invitation is expired");
         }
     }

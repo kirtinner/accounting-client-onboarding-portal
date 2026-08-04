@@ -3,10 +3,9 @@ package com.kzhastkou.accountingonboarding.questionnaire.entity;
 import com.kzhastkou.accountingonboarding.common.model.ClientType;
 import com.kzhastkou.accountingonboarding.invitation.entity.OnboardingInvitation;
 import com.kzhastkou.accountingonboarding.questionnaire.dto.AdminQuestionnaireUpdateRequest;
-import com.kzhastkou.accountingonboarding.questionnaire.dto.QuestionnaireRequest;
+import com.kzhastkou.accountingonboarding.questionnaire.dto.PublicQuestionnaireRequest;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
@@ -29,62 +28,52 @@ public class Questionnaire {
     @JoinColumn(name = "invitation_id", nullable = false, unique = true)
     private OnboardingInvitation invitation;
 
-    @NotBlank
     @Size(max = 255)
-    @Column(name = "first_name", nullable = false)
+    @Column(name = "first_name")
     private String firstName;
 
     @Size(max = 255)
     @Column(name = "middle_name")
     private String middleName;
 
-    @NotBlank
     @Size(max = 255)
-    @Column(name = "last_name", nullable = false)
+    @Column(name = "last_name")
     private String lastName;
 
-    @NotNull
-    @Column(name = "date_of_birth", nullable = false)
+    @Column(name = "date_of_birth")
     private LocalDate dateOfBirth;
 
-    @NotBlank
     @Email
     @Size(max = 255)
-    @Column(nullable = false)
+    @Column
     private String email;
 
-    @NotBlank
     @Size(max = 50)
-    @Column(name = "mobile_phone", nullable = false, length = 50)
+    @Column(name = "mobile_phone", length = 50)
     private String mobilePhone;
 
-    @NotBlank
     @Size(max = 255)
-    @Column(name = "address_line_1", nullable = false)
+    @Column(name = "address_line_1")
     private String addressLine1;
 
     @Size(max = 255)
     @Column(name = "address_line_2")
     private String addressLine2;
 
-    @NotBlank
     @Size(max = 255)
-    @Column(nullable = false)
+    @Column
     private String suburb;
 
-    @NotBlank
     @Size(max = 100)
-    @Column(nullable = false, length = 100)
+    @Column(length = 100)
     private String state;
 
-    @NotBlank
     @Size(max = 20)
-    @Column(nullable = false, length = 20)
+    @Column(length = 20)
     private String postcode;
 
-    @NotBlank
     @Size(max = 100)
-    @Column(nullable = false, length = 100)
+    @Column(length = 100)
     private String country = "Australia";
 
     @Column(name = "client_confirmed", nullable = false)
@@ -102,10 +91,10 @@ public class Questionnaire {
     protected Questionnaire() {
     }
 
-    public Questionnaire(OnboardingInvitation invitation, QuestionnaireRequest request, Instant createdAt) {
+    public Questionnaire(OnboardingInvitation invitation, PublicQuestionnaireRequest request, Instant createdAt) {
         this.invitation = invitation;
         this.createdAt = createdAt;
-        updateFrom(request, createdAt);
+        updateFrom(request, invitation.getClientType(), createdAt);
     }
 
     public Long getId() {
@@ -182,8 +171,8 @@ public class Questionnaire {
 
     public ClientType getClientType() { return clientType; }
 
-    public void updateFrom(QuestionnaireRequest request, Instant updatedAt) {
-        this.clientType = request.clientType();
+    public void updateFrom(PublicQuestionnaireRequest request, ClientType clientType, Instant updatedAt) {
+        this.clientType = clientType;
         this.firstName = request.firstName();
         this.middleName = request.middleName();
         this.lastName = request.lastName();
@@ -201,7 +190,6 @@ public class Questionnaire {
     }
 
     public void updateFrom(AdminQuestionnaireUpdateRequest request, Instant updatedAt) {
-        this.clientType = request.clientType();
         this.firstName = request.firstName();
         this.middleName = request.middleName();
         this.lastName = request.lastName();

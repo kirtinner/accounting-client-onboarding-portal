@@ -508,9 +508,11 @@ select {
 
 .questionnaire-modal-panel {
   width: min(760px, calc(100vw - 40px));
-  height: min(760px, 90vh);
+  height: min(760px, calc(100vh - 40px));
+  max-height: calc(100vh - 40px);
   display: flex;
   flex-direction: column;
+  min-height: 0;
   overflow: hidden;
 }
 
@@ -535,6 +537,7 @@ select {
 
 .modal-header {
   display: flex;
+  flex: 0 0 auto;
   justify-content: space-between;
   align-items: center;
   gap: 16px;
@@ -658,14 +661,16 @@ select {
   align-content: start;
   gap: 16px;
   padding: 22px;
-  flex: 1;
+  flex: 1 1 0;
   overflow-y: auto;
   min-height: 0;
+  overscroll-behavior: contain;
 }
 
 .modal-footer {
   display: flex;
-  flex: 0 0 72px;
+  flex: 0 0 auto;
+  min-height: 72px;
   align-items: center;
   justify-content: flex-end;
   gap: 10px;
@@ -707,7 +712,7 @@ select {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
-  overflow: hidden;
+  overflow: visible;
 }
 
 .public-loading,
@@ -728,6 +733,22 @@ select {
 .public-copy {
   margin: 10px 0 24px;
   color: var(--text-muted);
+}
+
+.public-unavailable {
+  border-left: 4px solid var(--border-strong);
+}
+
+.public-unavailable .public-copy {
+  margin-bottom: 0;
+}
+
+.public-unavailable.success {
+  border-left-color: #22c55e;
+}
+
+.public-unavailable.warning {
+  border-left-color: #f59e0b;
 }
 
 .public-details {
@@ -775,10 +796,15 @@ select {
 }
 
 .wizard-steps li {
+  min-height: 42px;
+}
+
+.wizard-steps button {
+  width: 100%;
+  min-height: 42px;
   display: flex;
   align-items: center;
   gap: 8px;
-  min-height: 42px;
   padding: 8px 10px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -786,6 +812,15 @@ select {
   background: var(--surface-muted);
   font-size: 13px;
   font-weight: 700;
+  text-align: left;
+}
+
+.wizard-steps button:not(:disabled) {
+  cursor: pointer;
+}
+
+.wizard-steps button:disabled {
+  cursor: default;
 }
 
 .wizard-steps span {
@@ -800,16 +835,37 @@ select {
   font-size: 12px;
 }
 
-.wizard-steps li.active {
+.wizard-steps li.active button {
   color: var(--primary);
   background: var(--primary-soft);
   border-color: #bfd4f2;
 }
 
-.wizard-steps li.active span,
-.wizard-steps li.complete span {
+.wizard-steps li.complete button {
+  color: #1e4f9b;
+  background: #f4f8ff;
+  border-color: #bfd4f2;
+}
+
+.wizard-steps li.accessible:not(.complete) button {
+  color: var(--text);
+  background: #ffffff;
+  border-color: var(--border-strong);
+}
+
+.wizard-steps li.inaccessible button {
+  opacity: 0.62;
+}
+
+.wizard-steps li.active span {
   color: #ffffff;
   background: var(--primary);
+  border-color: var(--primary);
+}
+
+.wizard-steps li.complete span {
+  color: var(--primary);
+  background: #ffffff;
   border-color: var(--primary);
 }
 
@@ -825,6 +881,11 @@ select {
   font-size: 20px;
 }
 
+.required-indicator {
+  color: var(--danger);
+  font-weight: 700;
+}
+
 .wizard-form-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -833,6 +894,118 @@ select {
 
 .wizard-field input {
   background: #ffffff;
+}
+
+.date-picker-input {
+  width: 100%;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  padding: 8px 10px;
+  color: var(--text);
+  background: #ffffff;
+  cursor: pointer;
+  text-align: left;
+}
+
+.date-picker-input span {
+  font-weight: 400;
+}
+
+.date-picker-input:focus {
+  outline: 3px solid var(--focus-ring);
+  border-color: var(--primary);
+}
+
+.date-picker-input[aria-invalid="true"] {
+  border-color: var(--danger);
+}
+
+.date-picker-popover {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 40;
+  width: 292px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.date-picker-field {
+  position: relative;
+}
+
+.date-picker-header,
+.date-picker-weekdays,
+.date-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.date-picker-header {
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.date-picker-selects {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 0.9fr);
+  gap: 6px;
+}
+
+.date-picker-selects select {
+  min-height: 32px;
+  padding: 4px 6px;
+}
+
+.date-picker-weekdays {
+  margin-bottom: 4px;
+}
+
+.date-picker-weekdays span {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.date-picker-day,
+.date-picker-empty {
+  min-height: 32px;
+}
+
+.date-picker-day {
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--text);
+  background: #ffffff;
+  cursor: pointer;
+}
+
+.date-picker-day:hover:not(:disabled) {
+  background: var(--surface-blue);
+  border-color: var(--border);
+}
+
+.date-picker-day.selected {
+  color: #ffffff;
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+.date-picker-day:disabled {
+  cursor: not-allowed;
+  color: var(--text-muted);
+  background: var(--surface-muted);
+  opacity: 0.55;
 }
 
 .documents-placeholder {
@@ -860,7 +1033,15 @@ select {
   gap: 16px;
 }
 
-.detail-section,
+.detail-section {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-muted);
+  height: auto;
+  max-height: none;
+  overflow: visible;
+}
+
 .review-group {
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -883,6 +1064,12 @@ select {
 .review-group dl {
   display: grid;
   margin: 0;
+}
+
+.detail-section dl {
+  height: auto;
+  max-height: none;
+  overflow: visible;
 }
 
 .detail-section dl div,
@@ -916,7 +1103,8 @@ select {
   overflow-wrap: anywhere;
 }
 
-.detail-section input {
+.detail-section input,
+.detail-section select {
   width: 100%;
   height: 34px;
   border: 1px solid var(--border-strong);
@@ -925,7 +1113,18 @@ select {
   background: #ffffff;
 }
 
-.detail-section input:focus {
+.detail-section .admin-date-picker-field {
+  width: 100%;
+}
+
+.detail-section .admin-date-picker-input {
+  min-height: 34px;
+  height: 34px;
+  padding: 5px 9px;
+}
+
+.detail-section input:focus,
+.detail-section select:focus {
   outline: 3px solid var(--focus-ring);
   border-color: var(--primary);
 }
@@ -947,9 +1146,25 @@ select {
 
 .wizard-actions {
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
   gap: 10px;
   margin-top: 20px;
+}
+
+.wizard-save-group {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.wizard-action-buttons {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 @media (max-width: 840px) {

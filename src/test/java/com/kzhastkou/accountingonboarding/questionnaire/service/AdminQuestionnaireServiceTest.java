@@ -4,12 +4,13 @@ import com.kzhastkou.accountingonboarding.audit.entity.AuditAction;
 import com.kzhastkou.accountingonboarding.audit.service.AuditLogService;
 import com.kzhastkou.accountingonboarding.common.exception.BadRequestException;
 import com.kzhastkou.accountingonboarding.common.exception.NotImplementedException;
+import com.kzhastkou.accountingonboarding.common.exception.NotFoundException;
 import com.kzhastkou.accountingonboarding.common.model.ClientType;
 import com.kzhastkou.accountingonboarding.invitation.entity.InvitationStatus;
 import com.kzhastkou.accountingonboarding.invitation.entity.OnboardingInvitation;
 import com.kzhastkou.accountingonboarding.questionnaire.dto.AdminQuestionnaireUpdateRequest;
 import com.kzhastkou.accountingonboarding.questionnaire.dto.AdminQuestionnaireDetailResponse;
-import com.kzhastkou.accountingonboarding.questionnaire.dto.QuestionnaireRequest;
+import com.kzhastkou.accountingonboarding.questionnaire.dto.PublicQuestionnaireRequest;
 import com.kzhastkou.accountingonboarding.questionnaire.entity.Questionnaire;
 import com.kzhastkou.accountingonboarding.questionnaire.repository.QuestionnaireRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -64,11 +65,12 @@ class AdminQuestionnaireServiceTest {
     @Test
     void updateQuestionnaireChangesEditableFieldsOnly() {
         Questionnaire questionnaire = questionnaire(InvitationStatus.SUBMITTED);
+        OnboardingInvitation invitation = questionnaire.getInvitation();
         Instant submittedAt = questionnaire.getSubmittedAt();
+        Instant createdAt = questionnaire.getCreatedAt();
         when(repository.findByIdWithInvitation(1L)).thenReturn(Optional.of(questionnaire));
 
         AdminQuestionnaireDetailResponse response = service.updateQuestionnaire(1L, new AdminQuestionnaireUpdateRequest(
-                ClientType.INDIVIDUAL,
                 "Taylor",
                 "James",
                 "Brown",
@@ -86,17 +88,37 @@ class AdminQuestionnaireServiceTest {
         assertEquals("Taylor", response.firstName());
         assertEquals("James", response.middleName());
         assertEquals("Brown", response.lastName());
+        assertEquals(LocalDate.of(1991, 2, 3), response.dateOfBirth());
         assertEquals("taylor@example.com", response.email());
+        assertEquals("0411111111", response.mobilePhone());
+        assertEquals("2 Queen Street", response.addressLine1());
+        assertEquals("Level 1", response.addressLine2());
+        assertEquals("Sydney", response.suburb());
+        assertEquals("NSW", response.state());
+        assertEquals("2000", response.postcode());
+        assertEquals("Australia", response.country());
+        assertEquals(ClientType.INDIVIDUAL, response.clientType());
+        assertEquals(invitation, questionnaire.getInvitation());
+        assertEquals(invitation.getId(), response.invitationId());
         assertEquals(InvitationStatus.SUBMITTED, response.invitationStatus());
         assertEquals(submittedAt, response.submittedAt());
         assertNull(response.approvedAt());
         assertNull(response.xpmSentAt());
+        assertEquals(createdAt, questionnaire.getCreatedAt());
         verify(auditLogService).recordSystemSuccess(
                 AuditAction.QUESTIONNAIRE_UPDATED,
                 "QUESTIONNAIRE",
                 1L,
                 "Questionnaire updated"
         );
+    }
+
+    @Test
+    void updateMissingQuestionnaireDoesNotAudit() {
+        when(repository.findByIdWithInvitation(1L)).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class, () -> service.updateQuestionnaire(1L, updateRequest()));
+        verifyNoInteractions(auditLogService);
     }
 
     @Test
@@ -175,9 +197,8 @@ class AdminQuestionnaireServiceTest {
         return questionnaire;
     }
 
-    private QuestionnaireRequest request(boolean clientConfirmed) {
-        return new QuestionnaireRequest(
-                ClientType.INDIVIDUAL,
+    private PublicQuestionnaireRequest request(boolean clientConfirmed) {
+        return new PublicQuestionnaireRequest(
                 "Alex",
                 null,
                 "Smith",
@@ -191,6 +212,23 @@ class AdminQuestionnaireServiceTest {
                 "3000",
                 "Australia",
                 clientConfirmed
+        );
+    }
+
+    private AdminQuestionnaireUpdateRequest updateRequest() {
+        return new AdminQuestionnaireUpdateRequest(
+                "Taylor",
+                "James",
+                "Brown",
+                LocalDate.of(1991, 2, 3),
+                "taylor@example.com",
+                "0411111111",
+                "2 Queen Street",
+                "Level 1",
+                "Sydney",
+                "NSW",
+                "2000",
+                "Australia"
         );
     }
 }

@@ -4,7 +4,7 @@ import com.kzhastkou.accountingonboarding.common.exception.BadRequestException;
 import com.kzhastkou.accountingonboarding.common.model.ClientType;
 import com.kzhastkou.accountingonboarding.invitation.entity.InvitationStatus;
 import com.kzhastkou.accountingonboarding.invitation.entity.OnboardingInvitation;
-import com.kzhastkou.accountingonboarding.questionnaire.dto.QuestionnaireRequest;
+import com.kzhastkou.accountingonboarding.questionnaire.dto.PublicQuestionnaireRequest;
 import com.kzhastkou.accountingonboarding.questionnaire.dto.QuestionnaireResponse;
 import com.kzhastkou.accountingonboarding.questionnaire.entity.Questionnaire;
 import com.kzhastkou.accountingonboarding.questionnaire.repository.QuestionnaireRepository;
@@ -20,6 +20,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -52,8 +53,27 @@ class QuestionnaireServiceTest {
         assertEquals("alex@example.com", response.email());
         assertEquals("Australia", response.country());
         assertEquals(true, response.clientConfirmed());
+        assertEquals(ClientType.INDIVIDUAL, response.clientType());
+        assertNotNull(response.clientType());
         assertNotNull(response.createdAt());
         assertNotNull(response.updatedAt());
+    }
+
+    @Test
+    void createIncompleteDraftForSentInvitationSucceeds() {
+        OnboardingInvitation invitation = sentInvitation();
+        when(repository.findByInvitationId(invitation.getId())).thenReturn(Optional.empty());
+
+        QuestionnaireResponse response = service.createOrUpdateForInvitation(invitation, partialRequest());
+
+        assertEquals("Alex", response.firstName());
+        assertEquals("Smith", response.lastName());
+        assertNull(response.email());
+        assertNull(response.mobilePhone());
+        assertNull(response.addressLine1());
+        assertEquals(InvitationStatus.SENT, invitation.getStatus());
+        assertNull(response.submittedAt());
+        assertEquals(ClientType.INDIVIDUAL, response.clientType());
     }
 
     @Test
@@ -69,6 +89,8 @@ class QuestionnaireServiceTest {
         assertEquals("taylor@example.com", response.email());
         assertEquals("3000", response.postcode());
         assertEquals(true, response.clientConfirmed());
+        assertEquals(ClientType.INDIVIDUAL, response.clientType());
+        assertNotNull(response.clientType());
     }
 
     @Test
@@ -101,6 +123,17 @@ class QuestionnaireServiceTest {
         assertThrows(BadRequestException.class, () -> service.submitForInvitation(invitation));
     }
 
+    @Test
+    void submitIncompleteQuestionnaireFailsWithoutChangingInvitationStatus() {
+        OnboardingInvitation invitation = sentInvitation();
+        Questionnaire questionnaire = new Questionnaire(invitation, partialRequest(), Instant.now());
+        when(repository.findByInvitationId(invitation.getId())).thenReturn(Optional.of(questionnaire));
+
+        assertThrows(BadRequestException.class, () -> service.submitForInvitation(invitation));
+        assertEquals(InvitationStatus.SENT, invitation.getStatus());
+        assertNull(questionnaire.getSubmittedAt());
+    }
+
     private OnboardingInvitation draftInvitation() {
         return new OnboardingInvitation(
                 UUID.randomUUID(),
@@ -118,9 +151,8 @@ class QuestionnaireServiceTest {
         return invitation;
     }
 
-    private QuestionnaireRequest request(boolean clientConfirmed) {
-        return new QuestionnaireRequest(
-                ClientType.INDIVIDUAL,
+    private PublicQuestionnaireRequest request(boolean clientConfirmed) {
+        return new PublicQuestionnaireRequest(
                 "Alex",
                 null,
                 "Smith",
@@ -137,9 +169,26 @@ class QuestionnaireServiceTest {
         );
     }
 
-    private QuestionnaireRequest updatedRequest(boolean clientConfirmed) {
-        return new QuestionnaireRequest(
-                ClientType.INDIVIDUAL,
+    private PublicQuestionnaireRequest partialRequest() {
+        return new PublicQuestionnaireRequest(
+                "Alex",
+                null,
+                "Smith",
+                LocalDate.of(1990, 1, 15),
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                "Australia",
+                false
+        );
+    }
+
+    private PublicQuestionnaireRequest updatedRequest(boolean clientConfirmed) {
+        return new PublicQuestionnaireRequest(
                 "Taylor",
                 "Lee",
                 "Brown",

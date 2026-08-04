@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Button from '../../../components/common/Button.jsx';
+import DateOfBirthPicker from '../../../components/common/DateOfBirthPicker.jsx';
 import Message from '../../../components/common/Message.jsx';
 import AppHeader from '../../../components/layout/AppHeader.jsx';
 import { lookupAustralianPostcode, AUSTRALIAN_STATES } from '../../../utils/australianPostcodes.js';
@@ -11,6 +12,49 @@ import {
 } from './publicOnboardingApi.js';
 
 const STEPS = ['Personal Details', 'Contact & Address', 'Documents', 'Review & Confirm'];
+const STEP_INDEX = {
+  PERSONAL_DETAILS: 0,
+  CONTACT_ADDRESS: 1,
+  DOCUMENTS: 2,
+  REVIEW_CONFIRM: 3
+};
+const REQUIRED_FIELDS_BY_STEP = {
+  [STEP_INDEX.PERSONAL_DETAILS]: [
+    ['firstName', 'First Name is required.'],
+    ['lastName', 'Last Name is required.'],
+    ['dateOfBirth', 'Date of Birth is required.']
+  ],
+  [STEP_INDEX.CONTACT_ADDRESS]: [
+    ['email', 'Email is required.'],
+    ['mobilePhone', 'Mobile Number is required.'],
+    ['addressLine1', 'Address Line 1 is required.'],
+    ['postcode', 'Postcode is required.'],
+    ['state', 'State is required.'],
+    ['suburb', 'Suburb is required.'],
+    ['country', 'Country is required.']
+  ],
+  [STEP_INDEX.REVIEW_CONFIRM]: [
+    ['clientConfirmed', 'Please confirm the information is accurate and complete.']
+  ]
+};
+const PUBLIC_ONBOARDING_UNAVAILABLE_CODES = {
+  PUBLIC_ONBOARDING_ALREADY_SUBMITTED: {
+    tone: 'success',
+    title: 'Questionnaire submitted'
+  },
+  PUBLIC_ONBOARDING_EXPIRED: {
+    tone: 'warning',
+    title: 'Invitation expired'
+  },
+  PUBLIC_ONBOARDING_CANCELLED: {
+    tone: 'neutral',
+    title: 'Invitation inactive'
+  },
+  PUBLIC_ONBOARDING_UNAVAILABLE: {
+    tone: 'neutral',
+    title: 'Invitation unavailable'
+  }
+};
 
 const EMPTY_FORM = {
   firstName: '',
@@ -36,6 +80,7 @@ export default function PublicOnboardingPage({ token }) {
   const [saving, setSaving] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [errorMessage, setErrorMessage] = useState(null);
+  const [unavailableState, setUnavailableState] = useState(null);
   const [validationErrors, setValidationErrors] = useState({});
   const fieldRefs = {
     firstName: useRef(null),
@@ -54,6 +99,7 @@ export default function PublicOnboardingPage({ token }) {
   const currentStep = STEPS[stepIndex];
   const isFinalStep = stepIndex === STEPS.length - 1;
   const canSubmit = isFinalStep && form.clientConfirmed && !saving;
+  const wizardStepStates = stepNavigationStates(form, stepIndex);
 
   useEffect(() => {
     async function loadOnboarding() {
@@ -62,10 +108,20 @@ export default function PublicOnboardingPage({ token }) {
       try {
         const response = await getPublicOnboarding(token);
         setOnboarding(response);
-        setForm(formFromQuestionnaire(response.questionnaire, response.email));
+        setUnavailableState(null);
+        const restoredForm = formFromQuestionnaire(response.questionnaire, response.email);
+        setForm(restoredForm);
+        setStepIndex(initialStepIndex(restoredForm, Boolean(response.questionnaire)));
       } catch (error) {
         setOnboarding(null);
-        setErrorMessage(error.message || 'This onboarding invitation is not available.');
+        const unavailable = publicUnavailableState(error);
+        if (unavailable) {
+          setUnavailableState(unavailable);
+          setErrorMessage(null);
+        } else {
+          setUnavailableState(null);
+          setErrorMessage(error.message || 'This onboarding invitation is not available.');
+        }
       } finally {
         setLoading(false);
       }
@@ -124,23 +180,37 @@ export default function PublicOnboardingPage({ token }) {
     }));
   }
 
+  function updateDateOfBirth(value) {
+    setForm((current) => ({
+      ...current,
+      dateOfBirth: value
+    }));
+    setValidationErrors((current) => ({
+      ...current,
+      dateOfBirth: undefined
+    }));
+  }
+
   async function nextStep() {
     if (!validateStep(stepIndex)) {
       return;
     }
 
-    if (stepIndex >= 1 && stepIndex !== 2) {
-      const saved = await saveQuestionnaire(false);
-      if (!saved) {
-        return;
-      }
+    const saved = await saveQuestionnaire(form.clientConfirmed);
+    if (!saved) {
+      return;
     }
 
     setStepIndex((current) => Math.min(current + 1, STEPS.length - 1));
   }
 
-  function previousStep() {
+  async function previousStep() {
     setValidationErrors({});
+    const saved = await saveQuestionnaire(form.clientConfirmed);
+    if (!saved) {
+      return;
+    }
+
     setStepIndex((current) => Math.max(current - 1, 0));
   }
 
@@ -160,7 +230,9 @@ export default function PublicOnboardingPage({ token }) {
       await submitPublicQuestionnaire(token);
       setSubmitted(true);
     } catch (error) {
-      setErrorMessage(error.message || 'Unable to submit the questionnaire.');
+      if (!handlePublicUnavailableError(error)) {
+        setErrorMessage(error.message || 'Unable to submit the questionnaire.');
+      }
     } finally {
       setSaving(false);
     }
@@ -174,46 +246,58 @@ export default function PublicOnboardingPage({ token }) {
       setForm(formFromQuestionnaire(saved, form.email));
       return true;
     } catch (error) {
-      setErrorMessage(error.message || 'Unable to save the questionnaire.');
+      if (!handlePublicUnavailableError(error)) {
+        setErrorMessage(error.message || 'Unable to save the questionnaire.');
+      }
       return false;
     } finally {
       setSaving(false);
     }
   }
 
+  async function saveProgress() {
+    await saveQuestionnaire(form.clientConfirmed);
+  }
+
+  async function navigateToStep(targetStepIndex) {
+    const targetState = wizardStepStates[targetStepIndex];
+    if (!targetState?.accessible || targetStepIndex === stepIndex || saving) {
+      return;
+    }
+
+    const saved = await saveQuestionnaire(form.clientConfirmed);
+    if (saved) {
+      setStepIndex(targetStepIndex);
+    }
+  }
+
+  function handlePublicUnavailableError(error) {
+    const unavailable = publicUnavailableState(error);
+    if (!unavailable) {
+      return false;
+    }
+
+    setOnboarding(null);
+    setUnavailableState(unavailable);
+    setErrorMessage(null);
+    return true;
+  }
+
   function validateStep(index) {
     const errors = {};
 
-    if (index === 0) {
-      requireField(errors, 'firstName', form.firstName, 'First Name is required.');
-      requireField(errors, 'lastName', form.lastName, 'Last Name is required.');
-      requireField(errors, 'dateOfBirth', form.dateOfBirth, 'Date of Birth is required.');
-    }
-
-    if (index === 1 || index === 3) {
-      requireField(errors, 'email', form.email, 'Email is required.');
+    if (index === STEP_INDEX.CONTACT_ADDRESS || index === STEP_INDEX.REVIEW_CONFIRM) {
       if (form.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
         errors.email = 'Enter a valid email address.';
       }
-      requireField(errors, 'mobilePhone', form.mobilePhone, 'Mobile Number is required.');
-      requireField(errors, 'addressLine1', form.addressLine1, 'Address Line 1 is required.');
-      requireField(errors, 'postcode', form.postcode, 'Postcode is required.');
-      requireField(errors, 'state', form.state, 'State is required.');
-      requireField(errors, 'suburb', form.suburb, 'Suburb is required.');
-      requireField(errors, 'country', form.country, 'Country is required.');
     }
 
-    if (index === 3) {
-      if (!form.clientConfirmed) {
-        errors.clientConfirmed = 'Please confirm the information is accurate and complete.';
-      }
+    if (index === STEP_INDEX.REVIEW_CONFIRM) {
+      collectRequiredFieldErrors(errors, form, STEP_INDEX.PERSONAL_DETAILS);
+      collectRequiredFieldErrors(errors, form, STEP_INDEX.CONTACT_ADDRESS);
     }
 
-    if (index === 3) {
-      requireField(errors, 'firstName', form.firstName, 'First Name is required.');
-      requireField(errors, 'lastName', form.lastName, 'Last Name is required.');
-      requireField(errors, 'dateOfBirth', form.dateOfBirth, 'Date of Birth is required.');
-    }
+    collectRequiredFieldErrors(errors, form, index);
 
     setValidationErrors(errors);
     const firstInvalidField = Object.keys(errors)[0];
@@ -250,6 +334,10 @@ export default function PublicOnboardingPage({ token }) {
 
         {loading && <div className="public-loading">Loading onboarding invitation...</div>}
 
+        {!loading && unavailableState && !onboarding && (
+          <PublicUnavailableState state={unavailableState} />
+        )}
+
         {!loading && errorMessage && !onboarding && (
           <div className="public-content">
             <Message type="error">{errorMessage}</Message>
@@ -268,12 +356,18 @@ export default function PublicOnboardingPage({ token }) {
             <InvitationContext onboarding={onboarding} />
 
             {errorMessage && <Message type="error">{errorMessage}</Message>}
-
             <ol className="wizard-steps" aria-label="Questionnaire steps">
               {STEPS.map((step, index) => (
-                <li key={step} className={index === stepIndex ? 'active' : index < stepIndex ? 'complete' : ''}>
-                  <span>{index + 1}</span>
-                  {step}
+                <li key={step} className={wizardStepStates[index].className}>
+                  <button
+                    type="button"
+                    onClick={() => navigateToStep(index)}
+                    disabled={!wizardStepStates[index].clickable || saving}
+                    aria-current={index === stepIndex ? 'step' : undefined}
+                  >
+                    <span>{index + 1}</span>
+                    {step}
+                  </button>
                 </li>
               ))}
             </ol>
@@ -283,23 +377,28 @@ export default function PublicOnboardingPage({ token }) {
 
               {stepIndex === 0 && (
                 <div className="wizard-form-grid">
-                  <WizardField label="First Name" name="firstName" value={form.firstName} error={validationErrors.firstName} inputRef={fieldRefs.firstName} onChange={updateField} required />
+                  <WizardField label="First Name" name="firstName" value={form.firstName} error={validationErrors.firstName} inputRef={fieldRefs.firstName} onChange={updateField} required={isRequiredField('firstName')} />
                   <WizardField label="Middle Name" name="middleName" value={form.middleName} onChange={updateField} />
-                  <WizardField label="Last Name" name="lastName" value={form.lastName} error={validationErrors.lastName} inputRef={fieldRefs.lastName} onChange={updateField} required />
-                  <WizardField label="Date of Birth" name="dateOfBirth" type="date" value={form.dateOfBirth} error={validationErrors.dateOfBirth} inputRef={fieldRefs.dateOfBirth} onChange={updateField} required />
+                  <WizardField label="Last Name" name="lastName" value={form.lastName} error={validationErrors.lastName} inputRef={fieldRefs.lastName} onChange={updateField} required={isRequiredField('lastName')} />
+                  <DateOfBirthPicker
+                    value={form.dateOfBirth}
+                    error={validationErrors.dateOfBirth}
+                    inputRef={fieldRefs.dateOfBirth}
+                    onChange={updateDateOfBirth}
+                  />
                 </div>
               )}
 
               {stepIndex === 1 && (
                 <div className="wizard-form-grid">
-                  <WizardField label="Email" name="email" type="email" value={form.email} error={validationErrors.email} inputRef={fieldRefs.email} onChange={updateField} required />
-                  <WizardField label="Mobile Number" name="mobilePhone" value={form.mobilePhone} error={validationErrors.mobilePhone} inputRef={fieldRefs.mobilePhone} onChange={updateField} required />
-                  <WizardField label="Address Line 1" name="addressLine1" value={form.addressLine1} error={validationErrors.addressLine1} inputRef={fieldRefs.addressLine1} onChange={updateField} required />
+                  <WizardField label="Email" name="email" type="email" value={form.email} error={validationErrors.email} inputRef={fieldRefs.email} onChange={updateField} required={isRequiredField('email')} />
+                  <WizardField label="Mobile Number" name="mobilePhone" value={form.mobilePhone} error={validationErrors.mobilePhone} inputRef={fieldRefs.mobilePhone} onChange={updateField} required={isRequiredField('mobilePhone')} />
+                  <WizardField label="Address Line 1" name="addressLine1" value={form.addressLine1} error={validationErrors.addressLine1} inputRef={fieldRefs.addressLine1} onChange={updateField} required={isRequiredField('addressLine1')} />
                   <WizardField label="Address Line 2" name="addressLine2" value={form.addressLine2} onChange={updateField} />
-                  <WizardField label="Postcode" name="postcode" value={form.postcode} error={validationErrors.postcode} inputRef={fieldRefs.postcode} onChange={updateField} required />
+                  <WizardField label="Postcode" name="postcode" value={form.postcode} error={validationErrors.postcode} inputRef={fieldRefs.postcode} onChange={updateField} required={isRequiredField('postcode')} />
                   <StateField value={form.state} error={validationErrors.state} inputRef={fieldRefs.state} onChange={updateField} />
-                  <WizardField label="Suburb" name="suburb" value={form.suburb} error={validationErrors.suburb} inputRef={fieldRefs.suburb} onChange={updateField} required />
-                  <WizardField label="Country" name="country" value={form.country} error={validationErrors.country} inputRef={fieldRefs.country} onChange={updateField} required />
+                  <WizardField label="Suburb" name="suburb" value={form.suburb} error={validationErrors.suburb} inputRef={fieldRefs.suburb} onChange={updateField} required={isRequiredField('suburb')} />
+                  <WizardField label="Country" name="country" value={form.country} error={validationErrors.country} inputRef={fieldRefs.country} onChange={updateField} required={isRequiredField('country')} />
                 </div>
               )}
 
@@ -324,26 +423,32 @@ export default function PublicOnboardingPage({ token }) {
                       onChange={updateField}
                       aria-invalid={Boolean(validationErrors.clientConfirmed)}
                     />
-                    <span>I confirm that the information provided is accurate and complete.</span>
+                    <RequiredLabel label="I confirm that the information provided is accurate and complete." required />
                   </label>
-                  {validationErrors.clientConfirmed && <span className="field-error">{validationErrors.clientConfirmed}</span>}
                 </div>
               )}
 
               <div className="wizard-actions">
-                <Button variant="secondary" onClick={previousStep} disabled={stepIndex === 0 || saving}>
-                  Back
-                </Button>
-                {!isFinalStep && (
-                  <Button variant="primary" onClick={nextStep} disabled={saving}>
-                    {saving ? 'Saving...' : 'Next'}
+                <div className="wizard-save-group">
+                  <Button variant="secondary" onClick={saveProgress} disabled={saving}>
+                    {saving ? 'Saving...' : 'Save'}
                   </Button>
-                )}
-                {isFinalStep && (
-                  <Button variant="primary" onClick={submitQuestionnaire} disabled={!canSubmit}>
-                    {saving ? 'Submitting...' : 'Submit Questionnaire'}
+                </div>
+                <div className="wizard-action-buttons">
+                  <Button variant="secondary" onClick={previousStep} disabled={stepIndex === 0 || saving}>
+                    Back
                   </Button>
-                )}
+                  {!isFinalStep && (
+                    <Button variant="primary" onClick={nextStep} disabled={saving}>
+                      {saving ? 'Saving...' : 'Next'}
+                    </Button>
+                  )}
+                  {isFinalStep && (
+                    <Button variant="primary" onClick={submitQuestionnaire} disabled={!canSubmit}>
+                      {saving ? 'Submitting...' : 'Submit Questionnaire'}
+                    </Button>
+                  )}
+                </div>
               </div>
             </section>
           </div>
@@ -369,10 +474,19 @@ function InvitationContext({ onboarding }) {
   );
 }
 
+function PublicUnavailableState({ state }) {
+  return (
+    <div className={`public-content public-unavailable ${state.tone}`}>
+      <p className="public-greeting">{state.title}</p>
+      <p className="public-copy">{state.message}</p>
+    </div>
+  );
+}
+
 function WizardField({ label, name, type = 'text', value, error, inputRef, onChange, required = false }) {
   return (
     <label className="field wizard-field">
-      <span>{label}</span>
+      <RequiredLabel label={label} required={required} />
       <input
         ref={inputRef}
         name={name}
@@ -382,7 +496,6 @@ function WizardField({ label, name, type = 'text', value, error, inputRef, onCha
         required={required}
         aria-invalid={Boolean(error)}
       />
-      {error && <span className="field-error">{error}</span>}
     </label>
   );
 }
@@ -390,7 +503,7 @@ function WizardField({ label, name, type = 'text', value, error, inputRef, onCha
 function StateField({ value, error, inputRef, onChange }) {
   return (
     <label className="field wizard-field">
-      <span>State</span>
+      <RequiredLabel label="State" required />
       <select
         ref={inputRef}
         name="state"
@@ -404,7 +517,6 @@ function StateField({ value, error, inputRef, onChange }) {
           <option key={state} value={state}>{state}</option>
         ))}
       </select>
-      {error && <span className="field-error">{error}</span>}
     </label>
   );
 }
@@ -422,6 +534,15 @@ function ReviewGroup({ title, rows }) {
         ))}
       </dl>
     </section>
+  );
+}
+
+function RequiredLabel({ label, required = false }) {
+  return (
+    <span>
+      {label}
+      {required && <span className="required-indicator" aria-hidden="true"> *</span>}
+    </span>
   );
 }
 
@@ -459,10 +580,86 @@ function formFromQuestionnaire(questionnaire, invitationEmail) {
   };
 }
 
-function requireField(errors, fieldName, value, message) {
-  if (!String(value || '').trim()) {
-    errors[fieldName] = message;
+function initialStepIndex(form, hasSavedQuestionnaire) {
+  if (!hasSavedQuestionnaire) {
+    return STEP_INDEX.PERSONAL_DETAILS;
   }
+
+  if (!isStepComplete(form, STEP_INDEX.PERSONAL_DETAILS)) {
+    return STEP_INDEX.PERSONAL_DETAILS;
+  }
+
+  if (!isStepComplete(form, STEP_INDEX.CONTACT_ADDRESS)) {
+    return STEP_INDEX.CONTACT_ADDRESS;
+  }
+
+  return STEP_INDEX.REVIEW_CONFIRM;
+}
+
+function isStepComplete(form, stepIndex) {
+  return requiredFieldsForStep(stepIndex).every(([fieldName]) => fieldHasValue(form, fieldName));
+}
+
+function stepNavigationStates(form, currentStepIndex) {
+  return STEPS.map((_, stepIndex) => {
+    const active = stepIndex === currentStepIndex;
+    const completed = isStepComplete(form, stepIndex);
+    const accessible = isStepAccessible(form, stepIndex);
+    const clickable = accessible && !active;
+    const className = [
+      active ? 'active' : '',
+      completed && !active ? 'complete' : '',
+      accessible && !active ? 'accessible' : '',
+      !accessible ? 'inaccessible' : ''
+    ].filter(Boolean).join(' ');
+
+    return {
+      active,
+      completed,
+      accessible,
+      clickable,
+      className
+    };
+  });
+}
+
+function isStepAccessible(form, stepIndex) {
+  if (stepIndex === STEP_INDEX.PERSONAL_DETAILS) {
+    return true;
+  }
+
+  if (stepIndex === STEP_INDEX.CONTACT_ADDRESS) {
+    return isStepComplete(form, STEP_INDEX.PERSONAL_DETAILS);
+  }
+
+  return isStepComplete(form, STEP_INDEX.PERSONAL_DETAILS)
+    && isStepComplete(form, STEP_INDEX.CONTACT_ADDRESS);
+}
+
+function collectRequiredFieldErrors(errors, form, stepIndex) {
+  requiredFieldsForStep(stepIndex).forEach(([fieldName, message]) => {
+    if (!fieldHasValue(form, fieldName)) {
+      errors[fieldName] = message;
+    }
+  });
+}
+
+function requiredFieldsForStep(stepIndex) {
+  return REQUIRED_FIELDS_BY_STEP[stepIndex] || [];
+}
+
+function isRequiredField(fieldName) {
+  return Object.values(REQUIRED_FIELDS_BY_STEP)
+    .some((fields) => fields.some(([requiredFieldName]) => requiredFieldName === fieldName));
+}
+
+function fieldHasValue(form, fieldName) {
+  const value = form[fieldName];
+  if (typeof value === 'boolean') {
+    return value;
+  }
+
+  return String(value || '').trim().length > 0;
 }
 
 function emptyToNull(value) {
@@ -473,4 +670,16 @@ function emptyToNull(value) {
 function inferStateUpdate(postcode) {
   const result = lookupAustralianPostcode(postcode);
   return result.state ? { state: result.state } : {};
+}
+
+function publicUnavailableState(error) {
+  const config = PUBLIC_ONBOARDING_UNAVAILABLE_CODES[error?.code];
+  if (!config) {
+    return null;
+  }
+
+  return {
+    ...config,
+    message: error.message || 'This invitation is not available.'
+  };
 }

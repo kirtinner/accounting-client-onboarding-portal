@@ -64,3 +64,10 @@ logging:
     root: WARN
     com.kzhastkou.accountingonboarding: WARN
     com.kzhastkou.accountingonboarding.invitation.scheduler: INFO
+
+# -----------------------------------------------------------------------------
+# Admin authentication
+# -----------------------------------------------------------------------------
+admin:
+  username: ${ADMIN_USERNAME:admin}
+  password-hash: ${ADMIN_PASSWORD_HASH:}

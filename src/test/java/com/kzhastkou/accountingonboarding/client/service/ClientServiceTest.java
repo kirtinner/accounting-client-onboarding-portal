@@ -5,7 +5,7 @@ import com.kzhastkou.accountingonboarding.client.repository.ClientRepository;
 import com.kzhastkou.accountingonboarding.common.exception.BadRequestException;
 import com.kzhastkou.accountingonboarding.common.model.ClientType;
 import com.kzhastkou.accountingonboarding.invitation.entity.OnboardingInvitation;
-import com.kzhastkou.accountingonboarding.questionnaire.dto.QuestionnaireRequest;
+import com.kzhastkou.accountingonboarding.questionnaire.dto.PublicQuestionnaireRequest;
 import com.kzhastkou.accountingonboarding.questionnaire.entity.Questionnaire;
 import org.hibernate.exception.ConstraintViolationException;
 import org.junit.jupiter.api.Test;
@@ -128,9 +128,8 @@ class ClientServiceTest {
         return questionnaire;
     }
 
-    private QuestionnaireRequest request() {
-        return new QuestionnaireRequest(
-                ClientType.INDIVIDUAL,
+    private PublicQuestionnaireRequest request() {
+        return new PublicQuestionnaireRequest(
                 "Alex",
                 null,
                 "Smith",

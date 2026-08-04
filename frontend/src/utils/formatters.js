@@ -8,13 +8,22 @@ export function formatDate(value) {
     return '';
   }
 
-  return new Intl.DateTimeFormat(undefined, {
+  return new Intl.DateTimeFormat('en-AU', {
     year: 'numeric',
     month: 'short',
     day: '2-digit',
     hour: '2-digit',
     minute: '2-digit'
   }).format(date);
+}
+
+export function formatLocalDate(value) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value || '')) {
+    return '';
+  }
+
+  const [year, month, day] = value.split('-');
+  return [day, month, year].join('/');
 }
 
 export function formatStatus(status) {

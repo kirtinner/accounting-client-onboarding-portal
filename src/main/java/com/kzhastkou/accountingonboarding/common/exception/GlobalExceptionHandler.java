@@ -1,6 +1,7 @@
 package com.kzhastkou.accountingonboarding.common.exception;
 
 import jakarta.servlet.http.HttpServletRequest;
+import com.kzhastkou.accountingonboarding.questionnaire.exception.PublicOnboardingUnavailableException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -24,6 +25,13 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.BAD_REQUEST, exception.getMessage(), request);
     }
 
+    @ExceptionHandler(PublicOnboardingUnavailableException.class)
+    public ResponseEntity<ApiErrorResponse> handlePublicOnboardingUnavailable(
+            PublicOnboardingUnavailableException exception,
+            HttpServletRequest request) {
+        return buildResponse(HttpStatus.BAD_REQUEST, exception.getMessage(), request, exception.getCode());
+    }
+
     @ExceptionHandler(NotImplementedException.class)
     public ResponseEntity<ApiErrorResponse> handleNotImplemented(NotImplementedException exception,
                                                                  HttpServletRequest request) {
@@ -40,9 +48,14 @@ public class GlobalExceptionHandler {
     }
 
     private ResponseEntity<ApiErrorResponse> buildResponse(HttpStatus status, String message, HttpServletRequest request) {
+        return buildResponse(status, message, request, null);
+    }
+
+    private ResponseEntity<ApiErrorResponse> buildResponse(HttpStatus status, String message, HttpServletRequest request,
+                                                           String code) {
         return ResponseEntity.status(status)
                 .body(new ApiErrorResponse(LocalDateTime.now(), status.value(), status.getReasonPhrase(), message,
-                        request.getRequestURI()));
+                        request.getRequestURI(), code));
     }
 
     private String formatFieldError(FieldError fieldError) {

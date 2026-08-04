@@ -1,6 +1,4 @@
 package com.kzhastkou.accountingonboarding.questionnaire.dto;
-
-import com.kzhastkou.accountingonboarding.common.model.ClientType;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -9,7 +7,6 @@ import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
 
 public record AdminQuestionnaireUpdateRequest(
-        @NotNull ClientType clientType,
         @NotBlank @Size(max = 255) String firstName,
         @Size(max = 255) String middleName,
         @NotBlank @Size(max = 255) String lastName,

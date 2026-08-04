@@ -1,7 +1,7 @@
 package com.kzhastkou.accountingonboarding.questionnaire.controller;
 
 import com.kzhastkou.accountingonboarding.questionnaire.dto.PublicOnboardingResponse;
-import com.kzhastkou.accountingonboarding.questionnaire.dto.QuestionnaireRequest;
+import com.kzhastkou.accountingonboarding.questionnaire.dto.PublicQuestionnaireRequest;
 import com.kzhastkou.accountingonboarding.questionnaire.dto.QuestionnaireResponse;
 import com.kzhastkou.accountingonboarding.questionnaire.service.PublicQuestionnaireService;
 import jakarta.validation.Valid;
@@ -30,7 +30,7 @@ public class PublicQuestionnaireController {
 
     @PutMapping("/{token}/questionnaire")
     public QuestionnaireResponse createOrUpdateQuestionnaire(@PathVariable String token,
-                                                            @Valid @RequestBody QuestionnaireRequest request) {
+                                                            @Valid @RequestBody PublicQuestionnaireRequest request) {
         return service.createOrUpdateQuestionnaire(token, request);
     }
 

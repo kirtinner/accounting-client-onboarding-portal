@@ -4,7 +4,7 @@ import com.kzhastkou.accountingonboarding.common.exception.BadRequestException;
 import com.kzhastkou.accountingonboarding.common.exception.NotFoundException;
 import com.kzhastkou.accountingonboarding.invitation.entity.InvitationStatus;
 import com.kzhastkou.accountingonboarding.invitation.entity.OnboardingInvitation;
-import com.kzhastkou.accountingonboarding.questionnaire.dto.QuestionnaireRequest;
+import com.kzhastkou.accountingonboarding.questionnaire.dto.PublicQuestionnaireRequest;
 import com.kzhastkou.accountingonboarding.questionnaire.dto.QuestionnaireResponse;
 import com.kzhastkou.accountingonboarding.questionnaire.entity.Questionnaire;
 import com.kzhastkou.accountingonboarding.questionnaire.repository.QuestionnaireRepository;
@@ -30,13 +30,13 @@ public class QuestionnaireService {
     }
 
     @Transactional
-    public QuestionnaireResponse createOrUpdateForInvitation(OnboardingInvitation invitation, QuestionnaireRequest request) {
+    public QuestionnaireResponse createOrUpdateForInvitation(OnboardingInvitation invitation, PublicQuestionnaireRequest request) {
         requireWritableInvitation(invitation, "Questionnaire can only be created or updated for SENT invitations");
 
         Instant now = Instant.now();
         Questionnaire questionnaire = repository.findByInvitationId(invitation.getId())
                 .map(existing -> {
-                    existing.updateFrom(request, now);
+                    existing.updateFrom(request, invitation.getClientType(), now);
                     return existing;
                 })
                 .orElseGet(() -> new Questionnaire(invitation, request, now));
@@ -50,9 +50,7 @@ public class QuestionnaireService {
 
         Questionnaire questionnaire = repository.findByInvitationId(invitation.getId())
                 .orElseThrow(() -> new BadRequestException("Questionnaire must exist before submission"));
-        if (!questionnaire.isClientConfirmed()) {
-            throw new BadRequestException("Client confirmation is required before submitting questionnaire");
-        }
+        validateCompleteForSubmission(questionnaire);
 
         Instant submittedAt = Instant.now();
         questionnaire.submit(submittedAt);
@@ -69,6 +67,31 @@ public class QuestionnaireService {
 
         if (expiresAt == null || !expiresAt.isAfter(Instant.now())) {
             throw new BadRequestException("Invitation is expired");
+        }
+    }
+
+    private void validateCompleteForSubmission(Questionnaire questionnaire) {
+        requirePresent(questionnaire.getFirstName(), "First Name is required before submitting questionnaire");
+        requirePresent(questionnaire.getLastName(), "Last Name is required before submitting questionnaire");
+        if (questionnaire.getDateOfBirth() == null) {
+            throw new BadRequestException("Date of Birth is required before submitting questionnaire");
+        }
+        requirePresent(questionnaire.getEmail(), "Email is required before submitting questionnaire");
+        requirePresent(questionnaire.getMobilePhone(), "Mobile Number is required before submitting questionnaire");
+        requirePresent(questionnaire.getAddressLine1(), "Address Line 1 is required before submitting questionnaire");
+        requirePresent(questionnaire.getSuburb(), "Suburb is required before submitting questionnaire");
+        requirePresent(questionnaire.getState(), "State is required before submitting questionnaire");
+        requirePresent(questionnaire.getPostcode(), "Postcode is required before submitting questionnaire");
+        requirePresent(questionnaire.getCountry(), "Country is required before submitting questionnaire");
+
+        if (!questionnaire.isClientConfirmed()) {
+            throw new BadRequestException("Client confirmation is required before submitting questionnaire");
+        }
+    }
+
+    private void requirePresent(String value, String message) {
+        if (value == null || value.isBlank()) {
+            throw new BadRequestException(message);
         }
     }
 

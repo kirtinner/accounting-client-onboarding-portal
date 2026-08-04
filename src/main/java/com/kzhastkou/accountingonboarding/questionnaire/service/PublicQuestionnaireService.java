@@ -1,14 +1,14 @@
 package com.kzhastkou.accountingonboarding.questionnaire.service;
 
-import com.kzhastkou.accountingonboarding.common.exception.BadRequestException;
 import com.kzhastkou.accountingonboarding.common.exception.NotFoundException;
 import com.kzhastkou.accountingonboarding.invitation.entity.InvitationStatus;
 import com.kzhastkou.accountingonboarding.invitation.entity.OnboardingInvitation;
 import com.kzhastkou.accountingonboarding.invitation.repository.OnboardingInvitationRepository;
 import com.kzhastkou.accountingonboarding.questionnaire.dto.PublicOnboardingResponse;
-import com.kzhastkou.accountingonboarding.questionnaire.dto.QuestionnaireRequest;
+import com.kzhastkou.accountingonboarding.questionnaire.dto.PublicQuestionnaireRequest;
 import com.kzhastkou.accountingonboarding.questionnaire.dto.QuestionnaireResponse;
 import com.kzhastkou.accountingonboarding.questionnaire.entity.Questionnaire;
+import com.kzhastkou.accountingonboarding.questionnaire.exception.PublicOnboardingUnavailableException;
 import com.kzhastkou.accountingonboarding.questionnaire.repository.QuestionnaireRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,6 +18,18 @@ import java.util.UUID;
 
 @Service
 public class PublicQuestionnaireService {
+
+    private static final String ALREADY_SUBMITTED_CODE = "PUBLIC_ONBOARDING_ALREADY_SUBMITTED";
+    private static final String EXPIRED_CODE = "PUBLIC_ONBOARDING_EXPIRED";
+    private static final String CANCELLED_CODE = "PUBLIC_ONBOARDING_CANCELLED";
+    private static final String UNAVAILABLE_CODE = "PUBLIC_ONBOARDING_UNAVAILABLE";
+    private static final String ALREADY_SUBMITTED_MESSAGE =
+            "This questionnaire has already been submitted. Thank you.";
+    private static final String EXPIRED_MESSAGE =
+            "This invitation has expired. Please contact the accounting team if you need a new invitation.";
+    private static final String CANCELLED_MESSAGE =
+            "This invitation is no longer active. Please contact the accounting team if you have any questions.";
+    private static final String UNAVAILABLE_MESSAGE = "This invitation is not available.";
 
     private final OnboardingInvitationRepository invitationRepository;
     private final QuestionnaireRepository questionnaireRepository;
@@ -41,7 +53,7 @@ public class PublicQuestionnaireService {
     }
 
     @Transactional
-    public QuestionnaireResponse createOrUpdateQuestionnaire(String token, QuestionnaireRequest request) {
+    public QuestionnaireResponse createOrUpdateQuestionnaire(String token, PublicQuestionnaireRequest request) {
         OnboardingInvitation invitation = findUsableInvitation(token);
         return questionnaireService.createOrUpdateForInvitation(invitation, request);
     }
@@ -68,14 +80,29 @@ public class PublicQuestionnaireService {
     }
 
     private void validatePublicAccess(OnboardingInvitation invitation) {
-        if (invitation.getStatus() != InvitationStatus.SENT) {
-            throw new BadRequestException("Public questionnaire is only available for SENT invitations");
+        InvitationStatus status = invitation.getStatus();
+        if (status == InvitationStatus.SUBMITTED
+                || status == InvitationStatus.APPROVED
+                || status == InvitationStatus.XPM_SENT) {
+            throw new PublicOnboardingUnavailableException(ALREADY_SUBMITTED_CODE, ALREADY_SUBMITTED_MESSAGE);
+        }
+
+        if (status == InvitationStatus.EXPIRED) {
+            throw new PublicOnboardingUnavailableException(EXPIRED_CODE, EXPIRED_MESSAGE);
+        }
+
+        if (status == InvitationStatus.CANCELLED) {
+            throw new PublicOnboardingUnavailableException(CANCELLED_CODE, CANCELLED_MESSAGE);
+        }
+
+        if (status != InvitationStatus.SENT) {
+            throw new PublicOnboardingUnavailableException(UNAVAILABLE_CODE, UNAVAILABLE_MESSAGE);
         }
 
         Instant expiresAt = invitation.getExpiresAt();
 
         if (expiresAt == null || !expiresAt.isAfter(Instant.now())) {
-            throw new BadRequestException("Invitation is expired");
+            throw new PublicOnboardingUnavailableException(EXPIRED_CODE, EXPIRED_MESSAGE);
         }
     }
 

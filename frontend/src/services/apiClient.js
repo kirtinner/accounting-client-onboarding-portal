@@ -9,7 +9,7 @@ export async function apiRequest(url, options = {}) {
   });
 
   if (!response.ok) {
-    throw new Error(await readErrorMessage(response));
+    throw await readApiError(response);
   }
 
   if (response.status === 204) {
@@ -19,11 +19,17 @@ export async function apiRequest(url, options = {}) {
   return response.json();
 }
 
-async function readErrorMessage(response) {
+async function readApiError(response) {
   try {
     const payload = await response.json();
-    return payload.message || `Request failed with status ${response.status}`;
+    const error = new Error(payload.message || `Request failed with status ${response.status}`);
+    error.status = response.status;
+    error.code = payload.code || null;
+    return error;
   } catch {
-    return `Request failed with status ${response.status}`;
+    const error = new Error(`Request failed with status ${response.status}`);
+    error.status = response.status;
+    error.code = null;
+    return error;
   }
 }

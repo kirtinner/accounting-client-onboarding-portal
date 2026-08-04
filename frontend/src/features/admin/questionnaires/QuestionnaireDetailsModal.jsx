@@ -1,6 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Button from '../../../components/common/Button.jsx';
+import DateOfBirthPicker from '../../../components/common/DateOfBirthPicker.jsx';
 import Message from '../../../components/common/Message.jsx';
+import { AUSTRALIAN_STATES } from '../../../utils/australianPostcodes.js';
+import { formatClientType, formatLocalDate } from '../../../utils/formatters.js';
 import StatusBadge from '../invitations/StatusBadge.jsx';
 
 export default function QuestionnaireDetailsModal({
@@ -21,6 +24,7 @@ export default function QuestionnaireDetailsModal({
   const canSendToXpm = status === 'APPROVED';
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState(() => formFromQuestionnaire(questionnaire));
+  const dateOfBirthRef = useRef(null);
 
   useEffect(() => {
     setForm(formFromQuestionnaire(questionnaire));
@@ -77,11 +81,26 @@ export default function QuestionnaireDetailsModal({
           <DetailGroup
             title="Personal Details"
             editing={editing}
+            dateOfBirthRef={dateOfBirthRef}
             fields={[
+              {
+                label: 'Client Type',
+                name: 'clientType',
+                value: questionnaire.clientType,
+                displayValue: formatClientType(questionnaire.clientType),
+                editable: false
+              },
               { label: 'First Name', name: 'firstName', value: form.firstName, required: true },
               { label: 'Middle Name', name: 'middleName', value: form.middleName },
               { label: 'Last Name', name: 'lastName', value: form.lastName, required: true },
-              { label: 'Date of Birth', name: 'dateOfBirth', type: 'date', value: form.dateOfBirth, required: true }
+              {
+                label: 'Date of Birth',
+                name: 'dateOfBirth',
+                type: 'date',
+                value: form.dateOfBirth,
+                displayValue: formatLocalDate(form.dateOfBirth),
+                required: true
+              }
             ]}
             onChange={updateField}
           />
@@ -100,9 +119,9 @@ export default function QuestionnaireDetailsModal({
             fields={[
               { label: 'Address Line 1', name: 'addressLine1', value: form.addressLine1, required: true },
               { label: 'Address Line 2', name: 'addressLine2', value: form.addressLine2 },
-              { label: 'Postcode', name: 'postcode', value: form.postcode, required: true },
-              { label: 'State', name: 'state', value: form.state, required: true },
               { label: 'Suburb', name: 'suburb', value: form.suburb, required: true },
+              { label: 'State', name: 'state', value: form.state, required: true, options: AUSTRALIAN_STATES },
+              { label: 'Postcode', name: 'postcode', value: form.postcode, required: true },
               { label: 'Country', name: 'country', value: form.country, required: true }
             ]}
             onChange={updateField}
@@ -156,32 +175,77 @@ export default function QuestionnaireDetailsModal({
   );
 }
 
-function DetailGroup({ title, fields, editing, onChange }) {
+function DetailGroup({ title, fields, editing, onChange, dateOfBirthRef }) {
   return (
-    <section className="detail-section review-group">
+    <section className="detail-section">
       <h3>{title}</h3>
       <dl>
         {fields.map((field) => (
           <div key={field.name}>
             <dt>{field.label}</dt>
             <dd>
-              {editing ? (
-                <input
-                  name={field.name}
-                  type={field.type || 'text'}
-                  value={field.value}
-                  onChange={onChange}
-                  required={field.required}
-                  maxLength={field.name === 'postcode' ? 20 : undefined}
-                />
+              {editing && field.editable !== false ? (
+                <EditableField field={field} onChange={onChange} dateOfBirthRef={dateOfBirthRef} />
               ) : (
-                field.value || '-'
+                displayFieldValue(field)
               )}
             </dd>
           </div>
         ))}
       </dl>
     </section>
+  );
+}
+
+function displayFieldValue(field) {
+  const value = Object.hasOwn(field, 'displayValue') ? field.displayValue : field.value;
+  if (value === null || value === undefined || String(value).trim() === '') {
+    return '-';
+  }
+
+  return value;
+}
+
+function EditableField({ field, onChange, dateOfBirthRef }) {
+  if (field.type === 'date') {
+    return (
+      <DateOfBirthPicker
+        value={field.value}
+        inputRef={dateOfBirthRef}
+        onChange={(value) => onChange({ target: { name: field.name, value } })}
+        showLabel={false}
+        className="date-picker-field admin-date-picker-field"
+        inputClassName="admin-date-picker-input"
+        usePortal
+      />
+    );
+  }
+
+  if (field.options) {
+    return (
+      <select
+        name={field.name}
+        value={field.value}
+        onChange={onChange}
+        required={field.required}
+      >
+        <option value="">Select state</option>
+        {field.options.map((option) => (
+          <option key={option} value={option}>{option}</option>
+        ))}
+      </select>
+    );
+  }
+
+  return (
+    <input
+      name={field.name}
+      type={field.type || 'text'}
+      value={field.value}
+      onChange={onChange}
+      required={field.required}
+      maxLength={field.name === 'postcode' ? 20 : undefined}
+    />
   );
 }
 

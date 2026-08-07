@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import AppLayout from './components/layout/AppLayout.jsx';
+import AuditLogPage from './features/admin/audit/AuditLogPage.jsx';
 import ClientsPage from './features/admin/clients/ClientsPage.jsx';
 import InvitationsPage from './features/admin/invitations/InvitationsPage.jsx';
 import QuestionnairesPage from './features/admin/questionnaires/QuestionnairesPage.jsx';
@@ -11,7 +12,8 @@ export default function App() {
   const pageSearchesRef = useRef({
     invitations: initialAdminPage === 'invitations' ? window.location.search : '',
     questionnaires: initialAdminPage === 'questionnaires' ? window.location.search : '',
-    clients: initialAdminPage === 'clients' ? window.location.search : ''
+    clients: initialAdminPage === 'clients' ? window.location.search : '',
+    auditLog: initialAdminPage === 'auditLog' ? window.location.search : ''
   });
   const [adminPage, setAdminPage] = useState(initialAdminPage);
   const [locationKey, setLocationKey] = useState(0);
@@ -52,6 +54,7 @@ export default function App() {
         <QuestionnairesPage locationKey={locationKey} />
       )}
       {adminPage === 'clients' && <ClientsPage />}
+      {adminPage === 'auditLog' && <AuditLogPage />}
       {adminPage === 'invitations' && (
         <InvitationsPage locationKey={locationKey} />
       )}
@@ -66,6 +69,9 @@ function getAdminPageFromPath(pathname) {
   if (pathname === '/clients') {
     return 'clients';
   }
+  if (pathname === '/audit-log') {
+    return 'auditLog';
+  }
   return 'invitations';
 }
 
@@ -75,6 +81,9 @@ function getAdminPath(page) {
   }
   if (page === 'clients') {
     return '/clients';
+  }
+  if (page === 'auditLog') {
+    return '/audit-log';
   }
   return '/invitations';
 }

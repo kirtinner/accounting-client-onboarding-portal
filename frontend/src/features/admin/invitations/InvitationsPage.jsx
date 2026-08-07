@@ -306,141 +306,143 @@ export default function InvitationsPage({ locationKey = 0 }) {
 
     return (
         <>
-            <PageHeader
-                title="Invitations"
-                description="Manage onboarding invitations sent to new clients."
-                action={
-                    <div className="page-actions">
+            <div className="list-page">
+                <PageHeader
+                    title="Invitations"
+                    description="Manage onboarding invitations sent to new clients."
+                    action={
+                        <div className="page-actions">
+                            <Button
+                                variant="secondary"
+                                onClick={() => loadInvitations(appliedStatuses)}
+                                disabled={loading || saving}
+                            >
+                                Refresh
+                            </Button>
+
+                            <Button
+                                variant="secondary"
+                                className="selected-action-button"
+                                onClick={() => openSelectedInvitation()}
+                                disabled={!selectedInvitation || loading || saving}
+                            >
+                                {selectedButtonText}
+                            </Button>
+
+                            <Button
+                                variant="primary"
+                                className="new-invitation-button"
+                                onClick={openCreateModal}
+                                disabled={saving}
+                            >
+                                New Invitation
+                            </Button>
+                        </div>
+                    }
+                />
+
+                {errorMessage && (
+                    <Message type="error">{errorMessage}</Message>
+                )}
+
+                <div className="invitation-filters">
+                    <div className="invitation-filters__control" ref={filtersRef}>
                         <Button
                             variant="secondary"
-                            onClick={() => loadInvitations(appliedStatuses)}
+                            onClick={isFiltersOpen ? closeFilters : openFilters}
                             disabled={loading || saving}
                         >
-                            Refresh
+                            {appliedStatuses.length > 0
+                                ? `Filters (${appliedStatuses.length})`
+                                : 'Filters'}
                         </Button>
 
-                        <Button
-                            variant="secondary"
-                            className="selected-action-button"
-                            onClick={() => openSelectedInvitation()}
-                            disabled={!selectedInvitation || loading || saving}
-                        >
-                            {selectedButtonText}
-                        </Button>
+                        {isFiltersOpen && (
+                            <div className="invitation-filters-popover">
+                                <div className="invitation-filters-popover__header">
+                                    <div className="invitation-filters-popover__title">
+                                        Invitation status
+                                    </div>
 
-                        <Button
-                            variant="primary"
-                            className="new-invitation-button"
-                            onClick={openCreateModal}
-                            disabled={saving}
-                        >
-                            New Invitation
-                        </Button>
-                    </div>
-                }
-            />
-
-            {errorMessage && (
-                <Message type="error">{errorMessage}</Message>
-            )}
-
-            <div className="invitation-filters">
-                <div className="invitation-filters__control" ref={filtersRef}>
-                    <Button
-                        variant="secondary"
-                        onClick={isFiltersOpen ? closeFilters : openFilters}
-                        disabled={loading || saving}
-                    >
-                        {appliedStatuses.length > 0
-                            ? `Filters (${appliedStatuses.length})`
-                            : 'Filters'}
-                    </Button>
-
-                    {isFiltersOpen && (
-                        <div className="invitation-filters-popover">
-                            <div className="invitation-filters-popover__header">
-                                <div className="invitation-filters-popover__title">
-                                    Invitation status
+                                    <button
+                                        type="button"
+                                        className="icon-button invitation-filters-popover__close"
+                                        onClick={closeFilters}
+                                        aria-label="Close filters"
+                                    >
+                                        &times;
+                                    </button>
                                 </div>
 
-                                <button
-                                    type="button"
-                                    className="icon-button invitation-filters-popover__close"
-                                    onClick={closeFilters}
-                                    aria-label="Close filters"
-                                >
-                                    &times;
-                                </button>
-                            </div>
+                                <div className="invitation-filters-popover__options">
+                                    {INVITATION_STATUSES.map((status) => (
+                                        <label
+                                            key={status}
+                                            className="invitation-filter-option"
+                                        >
+                                            <input
+                                                type="checkbox"
+                                                checked={draftStatuses.includes(status)}
+                                                onChange={() => toggleDraftStatus(status)}
+                                            />
 
-                            <div className="invitation-filters-popover__options">
-                                {INVITATION_STATUSES.map((status) => (
-                                    <label
-                                        key={status}
-                                        className="invitation-filter-option"
+                                            <span>{status}</span>
+                                        </label>
+                                    ))}
+                                </div>
+
+                                <div className="invitation-filters-popover__actions">
+                                    <Button
+                                        variant="secondary"
+                                        onClick={clearFilters}
+                                        disabled={
+                                            loading ||
+                                            saving ||
+                                            draftStatuses.length === 0
+                                        }
                                     >
-                                        <input
-                                            type="checkbox"
-                                            checked={draftStatuses.includes(status)}
-                                            onChange={() => toggleDraftStatus(status)}
-                                        />
+                                        Clear
+                                    </Button>
 
-                                        <span>{status}</span>
-                                    </label>
-                                ))}
+                                    <Button
+                                        variant="primary"
+                                        onClick={applyFilters}
+                                        disabled={loading || saving}
+                                    >
+                                        Apply
+                                    </Button>
+                                </div>
                             </div>
+                        )}
+                    </div>
 
-                            <div className="invitation-filters-popover__actions">
-                                <Button
-                                    variant="secondary"
-                                    onClick={clearFilters}
-                                    disabled={
-                                        loading ||
-                                        saving ||
-                                        draftStatuses.length === 0
-                                    }
-                                >
-                                    Clear
-                                </Button>
-
-                                <Button
-                                    variant="primary"
-                                    onClick={applyFilters}
-                                    disabled={loading || saving}
-                                >
-                                    Apply
-                                </Button>
-                            </div>
-                        </div>
-                    )}
+                    <div className="invitation-filter-chips">
+                        {appliedStatuses.map((status) => (
+                            <button
+                                key={status}
+                                type="button"
+                                className="invitation-filter-chip"
+                                onClick={() => removeAppliedStatus(status)}
+                                disabled={loading || saving}
+                                aria-label={`Remove ${status} filter`}
+                            >
+                                <span>{status}</span>
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        ))}
+                    </div>
                 </div>
 
-                <div className="invitation-filter-chips">
-                    {appliedStatuses.map((status) => (
-                        <button
-                            key={status}
-                            type="button"
-                            className="invitation-filter-chip"
-                            onClick={() => removeAppliedStatus(status)}
-                            disabled={loading || saving}
-                            aria-label={`Remove ${status} filter`}
-                        >
-                            <span>{status}</span>
-                            <span aria-hidden="true">&times;</span>
-                        </button>
-                    ))}
-                </div>
+                <Card className="list-page__content">
+                    <InvitationsTable
+                        invitations={invitations}
+                        loading={loading}
+                        selectedInvitationId={selectedInvitationId}
+                        onSelect={setSelectedInvitationId}
+                        onOpen={openSelectedInvitation}
+                    />
+                </Card>
             </div>
-
-            <Card>
-                <InvitationsTable
-                    invitations={invitations}
-                    loading={loading}
-                    selectedInvitationId={selectedInvitationId}
-                    onSelect={setSelectedInvitationId}
-                    onOpen={openSelectedInvitation}
-                />
-            </Card>
 
             {modalMode &&
                 (modalMode === 'create' || modalInvitation) && (

@@ -255,181 +255,183 @@ export default function QuestionnairesPage({ locationKey = 0 }) {
 
   return (
     <>
-      <PageHeader
-        title="Questionnaires"
-        description="Review client onboarding questionnaires submitted for accountant review."
-        action={
-          <div className="page-actions">
+      <div className="list-page">
+        <PageHeader
+          title="Questionnaires"
+          description="Review client onboarding questionnaires submitted for accountant review."
+          action={
+            <div className="page-actions">
+              <Button
+                variant="secondary"
+                onClick={() => loadQuestionnaires(appliedStatuses)}
+                disabled={loading || detailsLoading}
+              >
+                Refresh
+              </Button>
+              <Button
+                variant="secondary"
+                className="selected-action-button"
+                onClick={() => openQuestionnaire()}
+                disabled={!selectedQuestionnaire || loading || detailsLoading}
+              >
+                View Selected
+              </Button>
+            </div>
+          }
+        />
+
+        {errorMessage && <Message type="error">{errorMessage}</Message>}
+        {actionMessage && <Message type="error">{actionMessage}</Message>}
+
+        <div className="invitation-filters">
+          <span className="questionnaire-filters__label">Filters:</span>
+
+          <div className="invitation-filters__control" ref={filtersRef}>
             <Button
               variant="secondary"
-              onClick={() => loadQuestionnaires(appliedStatuses)}
+              className="questionnaire-filter-button"
+              onClick={isFiltersOpen ? closeFilters : openFilters}
               disabled={loading || detailsLoading}
             >
-              Refresh
+              {appliedStatuses.length > 0
+                ? `Filters (${appliedStatuses.length})`
+                : 'Filters'}
             </Button>
-            <Button
-              variant="secondary"
-              className="selected-action-button"
-              onClick={() => openQuestionnaire()}
-              disabled={!selectedQuestionnaire || loading || detailsLoading}
-            >
-              View Selected
-            </Button>
-          </div>
-        }
-      />
 
-      {errorMessage && <Message type="error">{errorMessage}</Message>}
-      {actionMessage && <Message type="error">{actionMessage}</Message>}
+            {isFiltersOpen && (
+              <div className="invitation-filters-popover">
+                <div className="invitation-filters-popover__header">
+                  <div className="invitation-filters-popover__title">
+                    Invitation status
+                  </div>
 
-      <div className="invitation-filters">
-        <span className="questionnaire-filters__label">Filters:</span>
-
-        <div className="invitation-filters__control" ref={filtersRef}>
-          <Button
-            variant="secondary"
-            className="questionnaire-filter-button"
-            onClick={isFiltersOpen ? closeFilters : openFilters}
-            disabled={loading || detailsLoading}
-          >
-            {appliedStatuses.length > 0
-              ? `Filters (${appliedStatuses.length})`
-              : 'Filters'}
-          </Button>
-
-          {isFiltersOpen && (
-            <div className="invitation-filters-popover">
-              <div className="invitation-filters-popover__header">
-                <div className="invitation-filters-popover__title">
-                  Invitation status
+                  <button
+                    type="button"
+                    className="icon-button invitation-filters-popover__close"
+                    onClick={closeFilters}
+                    aria-label="Close filters"
+                  >
+                    &times;
+                  </button>
                 </div>
 
-                <button
-                  type="button"
-                  className="icon-button invitation-filters-popover__close"
-                  onClick={closeFilters}
-                  aria-label="Close filters"
-                >
-                  &times;
-                </button>
-              </div>
+                <div className="invitation-filters-popover__options">
+                  {QUESTIONNAIRE_INVITATION_STATUSES.map((status) => (
+                    <label
+                      key={status}
+                      className="invitation-filter-option"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={draftStatuses.includes(status)}
+                        onChange={() => toggleDraftStatus(status)}
+                      />
 
-              <div className="invitation-filters-popover__options">
-                {QUESTIONNAIRE_INVITATION_STATUSES.map((status) => (
-                  <label
-                    key={status}
-                    className="invitation-filter-option"
+                      <span>{status}</span>
+                    </label>
+                  ))}
+                </div>
+
+                <div className="invitation-filters-popover__actions">
+                  <Button
+                    variant="secondary"
+                    onClick={clearFilters}
+                    disabled={
+                      loading ||
+                      detailsLoading ||
+                      draftStatuses.length === 0
+                    }
                   >
-                    <input
-                      type="checkbox"
-                      checked={draftStatuses.includes(status)}
-                      onChange={() => toggleDraftStatus(status)}
-                    />
+                    Clear
+                  </Button>
 
-                    <span>{status}</span>
-                  </label>
-                ))}
+                  <Button
+                    variant="primary"
+                    onClick={applyFilters}
+                    disabled={loading || detailsLoading}
+                  >
+                    Apply
+                  </Button>
+                </div>
               </div>
+            )}
+          </div>
 
-              <div className="invitation-filters-popover__actions">
-                <Button
-                  variant="secondary"
-                  onClick={clearFilters}
-                  disabled={
-                    loading ||
-                    detailsLoading ||
-                    draftStatuses.length === 0
-                  }
-                >
-                  Clear
-                </Button>
-
-                <Button
-                  variant="primary"
-                  onClick={applyFilters}
-                  disabled={loading || detailsLoading}
-                >
-                  Apply
-                </Button>
-              </div>
-            </div>
-          )}
+          <div className="invitation-filter-chips">
+            {appliedStatuses.map((status) => (
+              <button
+                key={status}
+                type="button"
+                className="invitation-filter-chip questionnaire-filter-chip"
+                onClick={() => removeAppliedStatus(status)}
+                disabled={loading || detailsLoading}
+                aria-label={`Remove ${status} filter`}
+              >
+                <span>{status}</span>
+                <span aria-hidden="true">&times;</span>
+              </button>
+            ))}
+          </div>
         </div>
 
-        <div className="invitation-filter-chips">
-          {appliedStatuses.map((status) => (
-            <button
-              key={status}
-              type="button"
-              className="invitation-filter-chip questionnaire-filter-chip"
-              onClick={() => removeAppliedStatus(status)}
-              disabled={loading || detailsLoading}
-              aria-label={`Remove ${status} filter`}
-            >
-              <span>{status}</span>
-              <span aria-hidden="true">&times;</span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <Card>
-        <div className="table-wrap">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Preferred Name</th>
-                <th>Client Name</th>
-                <th>Status</th>
-                <th>Email</th>
-                <th>Mobile Number</th>
-                <th>Suburb</th>
-                <th>State</th>
-                <th>Submitted</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading && (
-                <tr className="empty-row">
-                  <td colSpan="8" className="empty-cell">Loading questionnaires...</td>
+        <Card className="list-page__content">
+          <div className="table-wrap">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Preferred Name</th>
+                  <th>Client Name</th>
+                  <th>Status</th>
+                  <th>Email</th>
+                  <th>Mobile Number</th>
+                  <th>Suburb</th>
+                  <th>State</th>
+                  <th>Submitted</th>
                 </tr>
-              )}
-              {!loading && questionnaires.length === 0 && (
-                <tr className="empty-row">
-                  <td colSpan="8" className="empty-cell">No questionnaires.</td>
-                </tr>
-              )}
-              {!loading && questionnaires.map((questionnaire) => {
-                const selected = questionnaire.questionnaireId === selectedQuestionnaireId;
-                return (
-                  <tr
-                    key={questionnaire.questionnaireId}
-                    className={selected ? 'selected-row' : ''}
-                    tabIndex="0"
-                    aria-selected={selected}
-                    onClick={() => setSelectedQuestionnaireId(questionnaire.questionnaireId)}
-                    onDoubleClick={() => openQuestionnaire(questionnaire)}
-                    onKeyDown={(event) => {
-                      if (event.key === 'Enter') {
-                        openQuestionnaire(questionnaire);
-                      }
-                    }}
-                  >
-                    <td>{questionnaire.preferredName || ''}</td>
-                    <td>{formatClientName(questionnaire)}</td>
-                    <td><StatusBadge status={questionnaire.invitationStatus} /></td>
-                    <td>{questionnaire.email || ''}</td>
-                    <td>{questionnaire.mobilePhone || ''}</td>
-                    <td>{questionnaire.suburb || ''}</td>
-                    <td>{questionnaire.state || ''}</td>
-                    <td>{formatDate(questionnaire.submittedAt)}</td>
+              </thead>
+              <tbody>
+                {loading && (
+                  <tr className="empty-row">
+                    <td colSpan="8" className="empty-cell">Loading questionnaires...</td>
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </Card>
+                )}
+                {!loading && questionnaires.length === 0 && (
+                  <tr className="empty-row">
+                    <td colSpan="8" className="empty-cell">No questionnaires.</td>
+                  </tr>
+                )}
+                {!loading && questionnaires.map((questionnaire) => {
+                  const selected = questionnaire.questionnaireId === selectedQuestionnaireId;
+                  return (
+                    <tr
+                      key={questionnaire.questionnaireId}
+                      className={selected ? 'selected-row' : ''}
+                      tabIndex="0"
+                      aria-selected={selected}
+                      onClick={() => setSelectedQuestionnaireId(questionnaire.questionnaireId)}
+                      onDoubleClick={() => openQuestionnaire(questionnaire)}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter') {
+                          openQuestionnaire(questionnaire);
+                        }
+                      }}
+                    >
+                      <td>{questionnaire.preferredName || ''}</td>
+                      <td>{formatClientName(questionnaire)}</td>
+                      <td><StatusBadge status={questionnaire.invitationStatus} /></td>
+                      <td>{questionnaire.email || ''}</td>
+                      <td>{questionnaire.mobilePhone || ''}</td>
+                      <td>{questionnaire.suburb || ''}</td>
+                      <td>{questionnaire.state || ''}</td>
+                      <td>{formatDate(questionnaire.submittedAt)}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      </div>
 
       {selectedDetails && (
         <QuestionnaireDetailsModal

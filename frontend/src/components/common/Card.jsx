@@ -1,3 +1,5 @@
-export default function Card({ children }) {
-  return <section className="card">{children}</section>;
+export default function Card({ children, className = '' }) {
+  const classes = ['card', className].filter(Boolean).join(' ');
+
+  return <section className={classes}>{children}</section>;
 }

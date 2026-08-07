@@ -9,6 +9,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.time.Instant;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -22,6 +23,8 @@ class AuditLogRepositoryTest {
 
     @Test
     void savesAndReadsAuditLog() {
+        auditLogRepository.deleteAll();
+
         Instant occurredAt = Instant.parse("2026-08-02T10:15:30Z");
         AuditLog auditLog = new AuditLog(
                 occurredAt,
@@ -44,5 +47,44 @@ class AuditLogRepositoryTest {
         assertEquals(42L, found.getEntityId());
         assertEquals(AuditResult.SUCCESS, found.getResult());
         assertEquals("Invitation sent", found.getDescription());
+    }
+
+    @Test
+    void findsAllOrderedByOccurredAtDescending() {
+        auditLogRepository.deleteAll();
+
+        AuditLog oldest = new AuditLog(
+                Instant.parse("2026-08-02T10:15:30Z"),
+                "SYSTEM",
+                AuditAction.QUESTIONNAIRE_UPDATED,
+                "QUESTIONNAIRE",
+                1L,
+                AuditResult.SUCCESS,
+                "Oldest"
+        );
+        AuditLog newest = new AuditLog(
+                Instant.parse("2026-08-04T10:15:30Z"),
+                "SYSTEM",
+                AuditAction.QUESTIONNAIRE_APPROVED,
+                "QUESTIONNAIRE",
+                2L,
+                AuditResult.SUCCESS,
+                "Newest"
+        );
+        AuditLog middle = new AuditLog(
+                Instant.parse("2026-08-03T10:15:30Z"),
+                "SYSTEM",
+                AuditAction.QUESTIONNAIRE_APPROVAL_CANCELLED,
+                "QUESTIONNAIRE",
+                3L,
+                AuditResult.SUCCESS,
+                "Middle"
+        );
+        auditLogRepository.saveAllAndFlush(List.of(oldest, newest, middle));
+
+        List<AuditLog> auditLogs = auditLogRepository.findAllByOrderByOccurredAtDesc();
+
+        assertEquals(List.of("Newest", "Middle", "Oldest"),
+                auditLogs.stream().map(AuditLog::getDescription).toList());
     }
 }
